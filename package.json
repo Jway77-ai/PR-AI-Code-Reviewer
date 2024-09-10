@@ -1,31 +1,29 @@
 {
-  "name": "debugging-dragons-hackathon",
+  "name": "uob-hackathon-dragons",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "flask-dev": "FLASK_DEBUG=1 pip3 install -r requirements.txt && python3 -m flask --app api/index run -p 8000 --reload",
-    "flask-dev-2": "pip install -r requirements.txt && python -m flask --app api/index run -p 8000 --reload",
-    "next-dev": "next dev",
-    "dev": "concurrently \"pnpm run next-dev\" \"pnpm run flask-dev\"",
-    "dev-2": "concurrently \"pnpm run next-dev\" \"pnpm run flask-dev-2\"",
-    "vercel-build": "concurrently \"pnpm run next-dev\" \"pnpm run flask-dev\""
+    "dev": "concurrently \"next dev\" \"python -m flask --app api.index:application run --debug --port 8000\"",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/postgres": "^0.10.0",
     "clsx": "^2.1.1",
-    "concurrently": "^9.0.0",
-    "debugging-dragons-hackathon": "file:",
     "next": "14.2.8",
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "vercel": "^37.4.0"
+    "uob-hackathon-dragons": "file:"
   },
   "devDependencies": {
     "@radix-ui/react-tabs": "^1.1.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "concurrently": "^9.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.8",
     "postcss": "^8",
