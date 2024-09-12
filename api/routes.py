@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from .models import PR
 from .utils import get_files_diff, process_files_diff, analyze_code_with_llm
-from .extensions import db
+#from .extensions import db
+from .index import db
 import os
 import logging
 
@@ -44,8 +45,9 @@ def handle_pr():
 def summary():
     try:
         latest_entry = PR.query.order_by(PR.date_created.desc()).first()
+        logging.error(latest_entry)
         if not latest_entry:
-            return jsonify({'message': 'No entries found in the database.'}), 404
+            return jsonify({'message': 'No entries found in the database.'}), 200
         return jsonify({'entry': {
             'id': latest_entry.id,
             'pr_id': latest_entry.pr_id,

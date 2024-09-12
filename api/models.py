@@ -1,4 +1,5 @@
-from .extensions import db
+#from .extensions import db
+from .index import db
 from datetime import datetime
 
 class PR(db.Model):
