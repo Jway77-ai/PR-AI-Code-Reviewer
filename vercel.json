@@ -26,5 +26,16 @@
   "env": {
     "FLASK_APP": "api/index.py",
     "FLASK_ENV": "production"
-  }
+  },
+  "overrides": [
+    {
+      "source": "**/*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
 }
