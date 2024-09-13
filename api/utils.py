@@ -35,7 +35,7 @@ def get_files_diff(pr_id):
     
     if response.status_code != 200:
         logging.error(f"Failed to retrieve PR diff: {response.status_code} - {response.text}")
-        raise Exception("Failed to retrieve PR diff")
+        raise Exception("Failed to retrieve PR diff!!")
 
     diff_data = response.json()
     detailed_changes = []
