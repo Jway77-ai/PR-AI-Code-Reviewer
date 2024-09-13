@@ -33,4 +33,8 @@ def create_app():
 
     return app
 
-application = create_app()
+app = create_app()
+
+# This is the handler function Vercel will use
+def handler(event, context):
+    return app(event, context)
