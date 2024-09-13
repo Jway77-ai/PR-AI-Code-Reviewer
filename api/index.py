@@ -34,11 +34,3 @@ def create_app():
     return app
 
 app = create_app()
-
-# This is the handler function Vercel will use
-def handler(event, context):
-    return app(event, context)
-
-# For local development
-if __name__ == '__main__':
-    app.run()
