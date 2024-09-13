@@ -27,8 +27,9 @@ def get_files_diff(pr_id):
         'lines_removed': []
         }
     ]
+   url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_USERNAME}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
     """
-    url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_USERNAME}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
+    url = f"https://bitbucket.org/{BITBUCKET_USERNAME}/{BITBUCKET_REPO_SLUG}/pull-requests/{pr_id}/diff"
     headers = {'Authorization': f'Bearer {ACCESS_TOKEN}'}
     response = requests.get(url, headers=headers)
     
