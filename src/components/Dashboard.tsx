@@ -48,15 +48,6 @@ const Dashboard: React.FC = () => {
     // Here you would typically make an API call to delete the PR from the database
   };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedData = localStorage.getItem('prData');
-      if (storedData) {
-        setPrData(JSON.parse(storedData));
-      }
-    }
-  }, []);
-
   return (
     <div className="p-6 max-w-5xl mx-auto flex-grow">
       <div className="flex flex-col items-center">
