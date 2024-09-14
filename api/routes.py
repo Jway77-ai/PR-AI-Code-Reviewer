@@ -68,7 +68,7 @@ def summary():
         return jsonify({'error': 'Internal server error'}), 500
 
 @main.route('/api/latest', methods=['GET'])
-def summary():
+def latest():
     try:
         latest_entry = PR.query.order_by(PR.date_created.desc()).first()
         logging.error(latest_entry)
