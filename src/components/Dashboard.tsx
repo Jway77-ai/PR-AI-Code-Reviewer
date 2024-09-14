@@ -28,10 +28,13 @@ const Dashboard: React.FC = () => {
       }
       const data = await response.json();
       console.log(data);
-      const fetchedData = data.entries; // Access the entries array directly
-      setPrData(fetchedData);
-      localStorage.setItem('prData', JSON.stringify(fetchedData)); // Save data to localStorage
-      setError(null); // Clear any previous errors
+      if (data.entries && Array.isArray(data.entries)) {
+        const fetchedData = data.entries;
+        setPrData(fetchedData);
+        localStorage.setItem('prData', JSON.stringify(fetchedData)); // Save data to localStorage
+      } else {
+        setError("Invalid data format received from the API.");
+      }
     } catch (err) {
       setError("Error fetching data from backend.");
       console.error(err);
@@ -79,7 +82,7 @@ const Dashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                { prData && prData.map((pr) => (
+                { prData?.length > 0 ? prData.map((pr) => (
                   <tr key={pr.id}>
                     <td className="border-b p-2">{`${pr.sourceBranchName} to ${pr.targetBranchName} (#${pr.pr_id})`}</td>
                     <td className="border-b p-2">
@@ -97,7 +100,9 @@ const Dashboard: React.FC = () => {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )): (
+                  <p className="text-gray-500 mt-4">No pull requests available.</p>
+                )}
               </tbody>
             </table>
           </div>
