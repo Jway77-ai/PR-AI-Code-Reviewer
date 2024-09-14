@@ -12,11 +12,36 @@ from requests.auth import HTTPBasicAuth
 # Load environment variables from the .env file
 load_dotenv()
 
-# Retrieve OAuth credentials from environment variables
-BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")  # Your OAuth consumer key
-BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")  # Your OAuth consumer secret
-# Request URL for access token (using client credentials flow)
-token_url = "https://bitbucket.org/site/oauth2/access_token"
+def get_pr_from_repo(pr_id):
+    # Retrieve OAuth credentials from environment variables
+    BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")  # Your OAuth consumer key
+    BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")  # Your OAuth consumer secret
+    # Request URL for access token (using client credentials flow)
+    token_url = "https://bitbucket.org/site/oauth2/access_token"
+    # Request the access token
+    response = requests.post(
+        token_url,
+        data={"grant_type": "client_credentials"},
+        auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
+    )
+
+    if response.status_code == 200:
+        access_token = response.json().get("access_token")
+
+        # Retrieve repository details from environment variables
+        BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
+        BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
+
+        # URL to get the pull request diff
+        url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
+        headers = {'Authorization': f'Bearer {access_token}'}
+
+        # Make the request to get the pull request diff
+        reply = requests.get(url, headers=headers)
+        return reply
+    else:
+        logging.error(f"Failed to get access token: {response.status_code}, {response.text}")
+        raise Exception("Failed to get access token")
 
 def get_files_diff(pr_id):
     """
@@ -34,77 +59,49 @@ def get_files_diff(pr_id):
         'lines_removed': []
         }
     ]
-   url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_USERNAME}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
     """
-
-    # Request the access token
-    response = requests.post(
-        token_url,
-        data={"grant_type": "client_credentials"},
-        auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
-    )
-
-    # Check if the response was successful
-    if response.status_code == 200:
-        # Extract the access token from the response
-        access_token = response.json().get("access_token")
-        print("Access token:", access_token)
-
-        # Retrieve repository details from environment variables
-        BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
-        BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
-
-        # URL to get the pull request diff
-        url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
-        headers = {'Authorization': f'Bearer {access_token}'}
-
-        # Make the request to get the pull request diff
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            logging.error(f"Failed to retrieve PR diff: {response.status_code} - {response.text}")
-            raise Exception("Failed to retrieve PR diff!!")
-
-        else:
-            diff_text = response.text
-            detailed_changes = []
-            current_file = None
-            lines_added = []
-            lines_removed = []
-
-            for line in diff_text.splitlines():
-                if line.startswith("diff --git"):
-                    if current_file:
-                        # Strip the 'a/' prefix from the path
-                        file_path = current_file.replace('a/', '').replace('b/', '')
-                        detailed_changes.append({
-                            'path': file_path,
-                            'lines_added': lines_added,
-                            'lines_removed': lines_removed
-                        })
-                    current_file = line.split(" ")[2]
-                    lines_added = []
-                    lines_removed = []
-                elif line.startswith("@@"):
-                    pass
-                elif line.startswith("+"):
-                    if not (line.startswith("++ ") or line.startswith("+++") or line.startswith("new file mode")):  # Exclude metadata lines
-                        lines_added.append(line[1:])
-                elif line.startswith("-"):
-                    if not (line.startswith("-- ") or line.startswith("---") or line.startswith("deleted file mode")):  # Exclude metadata lines
-                        lines_removed.append(line[1:])
-
-            if current_file:
-                # Strip the 'a/' prefix from the path
-                file_path = current_file.replace('a/', '').replace('b/', '')
-                detailed_changes.append({
-                    'path': file_path,
-                    'lines_added': lines_added,
-                    'lines_removed': lines_removed
-                })
-            return detailed_changes
+    response = get_pr_from_repo(pr_id)
+    if response.status_code != 200:
+        logging.error(f"Failed to retrieve PR diff: {response.status_code}, {response.text}")
+        raise Exception("Failed to retrieve PR diff!!")
     else:
-        print("Failed to get access token:", response.status_code, response.text)
+        diff_text = response.text
+        detailed_changes = []
+        current_file = None
+        lines_added = []
+        lines_removed = []
 
+        for line in diff_text.splitlines():
+            if line.startswith("diff --git"):
+                if current_file:
+                    # Strip the 'a/' prefix from the path
+                    file_path = current_file.replace('a/', '').replace('b/', '')
+                    detailed_changes.append({
+                        'path': file_path,
+                        'lines_added': lines_added,
+                        'lines_removed': lines_removed
+                    })
+                current_file = line.split(" ")[2]
+                lines_added = []
+                lines_removed = []
+            elif line.startswith("@@"):
+                pass
+            elif line.startswith("+"):
+                if not (line.startswith("++ ") or line.startswith("+++") or line.startswith("new file mode")):  # Exclude metadata lines
+                    lines_added.append(line[1:])
+            elif line.startswith("-"):
+                if not (line.startswith("-- ") or line.startswith("---") or line.startswith("deleted file mode")):  # Exclude metadata lines
+                    lines_removed.append(line[1:])
+
+        if current_file:
+            # Strip the 'a/' prefix from the path
+            file_path = current_file.replace('a/', '').replace('b/', '')
+            detailed_changes.append({
+                'path': file_path,
+                'lines_added': lines_added,
+                'lines_removed': lines_removed
+            })
+        return detailed_changes
 
 def process_files_diff(files_diff):
     """
@@ -150,6 +147,9 @@ def analyze_code_with_llm(prompt, data):
         raise
 
 def queryLLM(context, user_query):
+    """
+    Further queries to Groq AI. Provide context and a user query.
+    """
     groq_API = os.getenv("GROQ_API_KEY")
     if not groq_API:
         raise ValueError("GROQ_API_KEY not set in environment variables")
