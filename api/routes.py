@@ -90,3 +90,26 @@ def latest():
 @main.route("/api/healthchecker", methods=["GET"])
 def healthchecker():
     return {"status": "success", "message": "Integrate Flask Framework with Next.js"}
+
+@main.route('/api/pr/<string:pr_id>', methods=['GET', 'POST'])
+def pr_entry(pr_id):
+    if request.method == 'GET':
+        try:
+            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+            if pr_entry is None:
+                return jsonify({'error': 'PR not found'}), 404
+            pr_data = {
+                'id': pr_entry.id,
+                'pr_id': pr_entry.pr_id,
+                'sourceBranchName': pr_entry.sourceBranchName,
+                'targetBranchName': pr_entry.targetBranchName,
+                'content': pr_entry.content,
+                'feedback': pr_entry.feedback,
+                'date_created': pr_entry.date_created.isoformat()
+            }
+            return jsonify(pr_data), 200
+        except Exception as e:
+            logging.error(f"Error fetching PR {pr_id}: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
+    else: # POST 
+        pass
