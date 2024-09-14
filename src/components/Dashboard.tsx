@@ -49,10 +49,11 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    // Retrieve data from localStorage on component mount
-    const storedData = localStorage.getItem('prData');
-    if (storedData) {
-      setPrData(JSON.parse(storedData));
+    if (typeof window !== 'undefined') {
+      const storedData = localStorage.getItem('prData');
+      if (storedData) {
+        setPrData(JSON.parse(storedData));
+      }
     }
   }, []);
 
