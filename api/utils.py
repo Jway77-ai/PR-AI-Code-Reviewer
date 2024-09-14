@@ -65,7 +65,7 @@ def get_files_diff(pr_id):
             raise Exception("Failed to retrieve PR diff!!")
 
         else:
-            return None
+            return []
             diff_data = response.json()
             detailed_changes = []
             for file in diff_data.get('values', []):
