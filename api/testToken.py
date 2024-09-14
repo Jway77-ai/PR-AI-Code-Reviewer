@@ -31,7 +31,7 @@ if response.status_code == 200:
     BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
 
     # URL to get the pull request diff
-    url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/8/diff"
+    url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/9/diff"
     headers = {'Authorization': f'Bearer {access_token}'}
 
     # Make the request to get the pull request diff

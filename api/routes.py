@@ -5,6 +5,10 @@ from .utils import get_files_diff, process_files_diff, analyze_code_with_llm
 from .index import db
 import os
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file
+load_dotenv()
 
 main = Blueprint('main', __name__)
 
@@ -42,6 +46,28 @@ def handle_pr():
         return jsonify({'error': 'Internal server error'}), 500
 
 @main.route('/api/summary', methods=['GET'])
+def summary():
+    try:
+        numEntriesToDisplay = int(os.getenv("NUMENTRIESTODISPLAY", 15))  # Display 15 by default
+        # Query the latest 15 entries, ordered by date_created in descending order
+        latest_entries = PR.query.order_by(PR.date_created.desc()).limit(numEntriesToDisplay).all()
+        
+        entries = [{
+            'id': entry.id,
+            'pr_id': entry.pr_id,
+            'sourceBranchName': entry.sourceBranchName,
+            'targetBranchName': entry.targetBranchName,
+            'content': entry.content,
+            'feedback': entry.feedback,
+            'date_created': entry.date_created.isoformat()
+        } for entry in latest_entries]
+        
+        return jsonify({'entries': entries}), 200
+    except Exception as e:
+        logging.error(f"Error fetching summary: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@main.route('/api/latest', methods=['GET'])
 def summary():
     try:
         latest_entry = PR.query.order_by(PR.date_created.desc()).first()
