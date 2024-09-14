@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation'; // Use for handling not found scenarios
-import PullRequestDetails from '@/components/PullRequestDetails'; // Adjust the import path as necessary
-import Header from '@/components/Header';
+import Chatbot from '@/components/Chatbot';
 import Footer from '@/components/Footer';
+import Header from '@/components/Header';
+import PullRequestDetails from '@/components/PullRequestDetails'; // Adjust the import path as necessary
+import { notFound } from 'next/navigation'; // Use for handling not found scenarios
 
 interface PullRequest {
   prNumber: number;
@@ -55,6 +56,7 @@ const PullRequestPage = async ({ params }: Props) => {
           <h1 className="text-3xl font-bold mb-4">Pull Request Details</h1>
           <PullRequestDetails pullRequest={pullRequest} />
         </div>
+        <Chatbot />
         <Footer />
     </div>
   );
