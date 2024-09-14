@@ -65,17 +65,42 @@ def get_files_diff(pr_id):
             raise Exception("Failed to retrieve PR diff!!")
 
         else:
-            return []
-            diff_data = response.json()
+            diff_text = response.text
             detailed_changes = []
-            for file in diff_data.get('values', []):
-                file_info = {'path': file['path'], 'lines_added': [], 'lines_removed': []}
-                for line in file.get('lines', []):
-                    if line['type'] == 'add':
-                        file_info['lines_added'].append(line['content'])
-                    elif line['type'] == 'remove':
-                        file_info['lines_removed'].append(line['content'])
-                detailed_changes.append(file_info)
+            current_file = None
+            lines_added = []
+            lines_removed = []
+
+            for line in diff_text.splitlines():
+                if line.startswith("diff --git"):
+                    if current_file:
+                        # Strip the 'a/' prefix from the path
+                        file_path = current_file.replace('a/', '').replace('b/', '')
+                        detailed_changes.append({
+                            'path': file_path,
+                            'lines_added': lines_added,
+                            'lines_removed': lines_removed
+                        })
+                    current_file = line.split(" ")[2]
+                    lines_added = []
+                    lines_removed = []
+                elif line.startswith("@@"):
+                    pass
+                elif line.startswith("+"):
+                    if not (line.startswith("++ ") or line.startswith("+++") or line.startswith("new file mode")):  # Exclude metadata lines
+                        lines_added.append(line[1:])
+                elif line.startswith("-"):
+                    if not (line.startswith("-- ") or line.startswith("---") or line.startswith("deleted file mode")):  # Exclude metadata lines
+                        lines_removed.append(line[1:])
+
+            if current_file:
+                # Strip the 'a/' prefix from the path
+                file_path = current_file.replace('a/', '').replace('b/', '')
+                detailed_changes.append({
+                    'path': file_path,
+                    'lines_added': lines_added,
+                    'lines_removed': lines_removed
+                })
             return detailed_changes
     else:
         print("Failed to get access token:", response.status_code, response.text)
