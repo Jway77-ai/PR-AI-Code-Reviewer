@@ -1,12 +1,5 @@
 import React from 'react';
 
-interface PullRequestContent {
-  filePath: string;
-  changes: {
-    added: string[];
-    removed: string[];
-  };
-}
 
 interface PullRequest {
   id: number;
@@ -14,7 +7,7 @@ interface PullRequest {
   sourceBranchName: string;
   targetBranchName: string;
   date_created: string;
-  content: PullRequestContent[];
+  content: string;
   feedback: string;
 }
 
@@ -38,23 +31,7 @@ const PullRequestDetails: React.FC<Props> = ({ pullRequest }) => {
       <div className="mb-4">
         <span className="font-semibold text-gray-700">Content:</span>
         <div className="mt-2 space-y-4">
-          {pullRequest.content.map((fileChange, index) => (
-            <div key={index} className="bg-gray-50 border border-gray-300 p-4 rounded-lg">
-              <div className="font-semibold text-gray-800 mb-2">File: {fileChange.filePath}</div>
-              <div className="mb-2">
-                <span className="font-semibold text-gray-700">Lines Added:</span>
-                <pre className="bg-gray-100 border border-gray-300 p-2 rounded-lg mt-1 whitespace-pre-wrap">
-                  {fileChange.changes.added.join('\n')}
-                </pre>
-              </div>
-              <div>
-                <span className="font-semibold text-gray-700">Lines Removed:</span>
-                <pre className="bg-gray-100 border border-gray-300 p-2 rounded-lg mt-1 whitespace-pre-wrap">
-                  {fileChange.changes.removed.join('\n')}
-                </pre>
-              </div>
-            </div>
-          ))}
+          {pullRequest.content}
         </div>
       </div>
       <div className="mb-4">
