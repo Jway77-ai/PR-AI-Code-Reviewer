@@ -5,11 +5,18 @@ from groq import Groq
 from .index import db
 from .models import PR
 from datetime import datetime
+from dotenv import load_dotenv
+import requests
+from requests.auth import HTTPBasicAuth
 
-# Fetch values from environment variables
-BITBUCKET_USERNAME = os.getenv("BITBUCKET_USERNAME")
-BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+# Load environment variables from the .env file
+load_dotenv()
+
+# Retrieve OAuth credentials from environment variables
+BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")  # Your OAuth consumer key
+BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")  # Your OAuth consumer secret
+# Request URL for access token (using client credentials flow)
+token_url = "https://bitbucket.org/site/oauth2/access_token"
 
 def get_files_diff(pr_id):
     """
@@ -29,25 +36,49 @@ def get_files_diff(pr_id):
     ]
    url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_USERNAME}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
     """
-    url = f"https://bitbucket.org/{BITBUCKET_USERNAME}/{BITBUCKET_REPO_SLUG}/pull-requests/{pr_id}/diff"
-    headers = {'Authorization': f'Bearer {ACCESS_TOKEN}'}
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code != 200:
-        logging.error(f"Failed to retrieve PR diff: {response.status_code} - {response.text}")
-        raise Exception("Failed to retrieve PR diff!!")
 
-    diff_data = response.json()
-    detailed_changes = []
-    for file in diff_data.get('values', []):
-        file_info = {'path': file['path'], 'lines_added': [], 'lines_removed': []}
-        for line in file.get('lines', []):
-            if line['type'] == 'add':
-                file_info['lines_added'].append(line['content'])
-            elif line['type'] == 'remove':
-                file_info['lines_removed'].append(line['content'])
-        detailed_changes.append(file_info)
-    return detailed_changes
+    # Request the access token
+    response = requests.post(
+        token_url,
+        data={"grant_type": "client_credentials"},
+        auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
+    )
+
+    # Check if the response was successful
+    if response.status_code == 200:
+        # Extract the access token from the response
+        access_token = response.json().get("access_token")
+        print("Access token:", access_token)
+
+        # Retrieve repository details from environment variables
+        BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
+        BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
+
+        # URL to get the pull request diff
+        url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
+        headers = {'Authorization': f'Bearer {access_token}'}
+
+        # Make the request to get the pull request diff
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            logging.error(f"Failed to retrieve PR diff: {response.status_code} - {response.text}")
+            raise Exception("Failed to retrieve PR diff!!")
+
+        else:
+            diff_data = response.json()
+            detailed_changes = []
+            for file in diff_data.get('values', []):
+                file_info = {'path': file['path'], 'lines_added': [], 'lines_removed': []}
+                for line in file.get('lines', []):
+                    if line['type'] == 'add':
+                        file_info['lines_added'].append(line['content'])
+                    elif line['type'] == 'remove':
+                        file_info['lines_removed'].append(line['content'])
+                detailed_changes.append(file_info)
+            return detailed_changes
+    else:
+        print("Failed to get access token:", response.status_code, response.text)
+
 
 def process_files_diff(files_diff):
     """
