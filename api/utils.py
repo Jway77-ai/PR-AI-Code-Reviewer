@@ -149,6 +149,33 @@ def analyze_code_with_llm(prompt, data):
         logging.error(f"Error in LLM analysis: {e}")
         raise
 
+def queryLLM(context, user_query):
+    groq_API = os.getenv("GROQ_API_KEY")
+    if not groq_API:
+        raise ValueError("GROQ_API_KEY not set in environment variables")
+    client = Groq(api_key=groq_API)
+
+    if data is None:
+        data = ""
+
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": context},
+                {"role": "user", "content": user_query}
+            ],
+            model=os.getenv("GROQ_MODEL_NAME", "llama3-8b-8192"),
+            temperature=0.5,
+            max_tokens=8192,
+            top_p=1,
+            stop=None,
+            stream=False,
+        )
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        logging.error(f"Error in LLM analysis: {e}")
+        raise
+
 def insert_dummy_pr():
     # Create a new PR instance
     dummy_pr = PR(
