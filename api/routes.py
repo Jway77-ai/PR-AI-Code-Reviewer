@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from .models import PR
-from .utils import get_files_diff, process_files_diff, analyze_code_with_llm
+from .utils import get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM
 #from .extensions import db
 from .index import db
 import os
@@ -111,5 +111,23 @@ def pr_entry(pr_id):
         except Exception as e:
             logging.error(f"Error fetching PR {pr_id}: {e}")
             return jsonify({'error': 'Internal server error'}), 500
-    else: # POST 
-        pass
+    else: # POST new comment/qn to the AI
+        user_query = request.form.get('user_query')
+        prompt_file_path = os.path.join(os.path.dirname(__file__), 'furtherPrompt')
+        # Get prompt and context (PR content and previous feedback) before querying
+        with open(prompt_file_path, 'r') as file:
+            prompt_text = file.read().strip()
+        try:
+            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+            if pr_entry is None:
+                return jsonify({'error': 'PR not found'}), 404
+            prompt_text += "\nPull request contents: " + pr_entry.content + "\n Your previous feedback: " + pr_entry.feedback
+            newFeedback = queryLLM(prompt_text, user_query)
+            # TODO: Need to update PR entry in the DB
+            return jsonify({'status': 'success', 'feedback': newFeedback}), 200
+        except FileNotFoundError:
+            logging.error(f"Prompt file not found: {prompt_file_path}")
+            return jsonify({'error': 'Prompt file not found'}), 404
+        except Exception as e:
+            logging.error(f"Error fetching PR {pr_id}: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
