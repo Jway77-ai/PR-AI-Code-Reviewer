@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"python -m flask --app api.index:application run --debug --port 8000\"",
+    "dev": "concurrently \"next dev\" \"python -m flask --app api.index:app run --debug --port 8000\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

@@ -152,16 +152,16 @@ def analyze_code_with_llm(prompt, data):
 def insert_dummy_pr():
     # Create a new PR instance
     dummy_pr = PR(
-        pr_id="123456",
-        sourceBranchName="feature/test",
+        pr_id="12345",
+        sourceBranchName="feature/branch",
         targetBranchName="main",
-        content="""Path: src/test.py
+        content="""Path: src/main.py
                 Lines Added:
-                    print('Test, world!')
-                    print('Test, world!')
+                    print('Hello, world!')
+                    print('Bye, world!')
                 Lines Removed:
-                    print('Test me')
-                Path: src/halo.py
+                    print('Remove me')
+                Path: src/quickMaths.py
                 Lines Added:
                     x = 1
                     y = 2
