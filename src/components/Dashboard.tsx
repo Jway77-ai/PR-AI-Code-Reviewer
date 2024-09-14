@@ -79,27 +79,24 @@ const Dashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                { prData.map((pr) => (
-                  <>
-                    {console.log(pr)}
-                    <tr key={pr.id}>
-                      <td className="border-b p-2">{`${pr.sourceBranchName} to ${pr.targetBranchName} (#${pr.pr_id})`}</td>
-                      <td className="border-b p-2">
-                        {new Date(pr.date_created).toLocaleString()}
-                      </td>
-                      <td className="border-b p-2 flex flex-row">
-                        <Link href={`/pull-requests/${pr.pr_id}`}>
-                          <FaExternalLinkAlt />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(pr.id)}
-                          className="text-red-500 ml-2"
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
-                    </tr>
-                  </>
+                { prData && prData.map((pr) => (
+                  <tr key={pr.id}>
+                    <td className="border-b p-2">{`${pr.sourceBranchName} to ${pr.targetBranchName} (#${pr.pr_id})`}</td>
+                    <td className="border-b p-2">
+                      {new Date(pr.date_created).toLocaleString()}
+                    </td>
+                    <td className="border-b p-2 flex flex-row">
+                      <Link href={`/pull-requests/${pr.pr_id}`}>
+                        <FaExternalLinkAlt />
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(pr.id)}
+                        className="text-red-500 ml-2"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
