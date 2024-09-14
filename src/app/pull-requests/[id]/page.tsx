@@ -14,19 +14,18 @@ interface PullRequest {
   feedback: string;
 }
 
-interface Props {
+const PullRequestPage = async ({ params }: {
   params: {
     id: string;
-  };
-}
-
-const PullRequestPage = async ({ params }: Props) => {
+  }
+}) => {
   const { id } = params;
+
   // Dummy data
   const dummyData: Record<string, PullRequest> = {
-    "12345": {
-      id: 1,
-      pr_id: "12345",
+    [id]: {
+      id: Number([id]),
+      pr_id: id,
       sourceBranchName: "feature/test",
       targetBranchName: "main",
       date_created: "2023-09-01T08:00:00Z",

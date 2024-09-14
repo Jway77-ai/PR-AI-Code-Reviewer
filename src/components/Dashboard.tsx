@@ -27,11 +27,10 @@ const Dashboard: React.FC = () => {
         throw new Error("Error fetching data from backend.");
       }
       const data = await response.json();
-      console.log(data);
       if (data.entries && Array.isArray(data.entries)) {
+        console.log(data);
         const fetchedData = data.entries;
         setPrData(fetchedData);
-        localStorage.setItem("prData", JSON.stringify(fetchedData)); // Save data to localStorage
       } else {
         setError("Invalid data format received from the API.");
       }
