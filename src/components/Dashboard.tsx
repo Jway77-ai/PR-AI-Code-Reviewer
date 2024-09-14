@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaExternalLinkAlt, FaTrash } from "react-icons/fa";
 import Link from "next/link";
 
@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
       if (data.entries && Array.isArray(data.entries)) {
         const fetchedData = data.entries;
         setPrData(fetchedData);
-        localStorage.setItem('prData', JSON.stringify(fetchedData)); // Save data to localStorage
+        localStorage.setItem("prData", JSON.stringify(fetchedData)); // Save data to localStorage
       } else {
         setError("Invalid data format received from the API.");
       }
@@ -42,6 +42,11 @@ const Dashboard: React.FC = () => {
       setLoading(false); // Set loading state back to false after fetching data
     }
   };
+
+  // Automatically fetch data on component load
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleDelete = (prId: number) => {
     console.log(`Delete PR #${prId}`);
@@ -74,25 +79,27 @@ const Dashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                { prData?.length > 0 ? prData.map((pr) => (
-                  <tr key={pr.id}>
-                    <td className="border-b p-2">{`${pr.sourceBranchName} to ${pr.targetBranchName} (#${pr.pr_id})`}</td>
-                    <td className="border-b p-2">
-                      {new Date(pr.date_created).toLocaleString()}
-                    </td>
-                    <td className="border-b p-2 flex flex-row">
-                      <Link href={`/pull-requests/${pr.pr_id}`}>
-                        <FaExternalLinkAlt />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(pr.id)}
-                        className="text-red-500 ml-2"
-                      >
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                )): (
+                {prData?.length > 0 ? (
+                  prData.map((pr) => (
+                    <tr key={pr.id}>
+                      <td className="border-b p-2">{`${pr.sourceBranchName} to ${pr.targetBranchName} (#${pr.pr_id})`}</td>
+                      <td className="border-b p-2">
+                        {new Date(pr.date_created).toLocaleString()}
+                      </td>
+                      <td className="border-b p-2 flex flex-row">
+                        <Link href={`/pull-requests/${pr.pr_id}`}>
+                          <FaExternalLinkAlt />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(pr.id)}
+                          className="text-red-500 ml-2"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <p className="text-gray-500 mt-4">No pull requests available.</p>
                 )}
               </tbody>
