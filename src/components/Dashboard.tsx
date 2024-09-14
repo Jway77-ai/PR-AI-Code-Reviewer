@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FaExternalLinkAlt, FaTrash } from "react-icons/fa";
 import Link from "next/link";
 
