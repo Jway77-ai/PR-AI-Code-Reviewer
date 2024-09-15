@@ -45,33 +45,46 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
 
 
   return (
-    <div className="p-6 bg-white shadow-md rounded-lg">
-      {loading && <p className="text-blue-500 mt-4">Loading...</p>}
-      {error && <p className="text-red-500 mt-4">{error}</p>}
+    <div className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-lg">
+      {loading && (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+          <p className="font-bold">Error</p>
+          <p>{error}</p>
+        </div>
+      )}
       {prDetails && (
         <div>
-          <h2 className="text-3xl font-bold mb-4 text-gray-800">Pull Request #{prDetails.pr_id}</h2>
-          <div className="mb-4">
-            <span className="font-semibold text-gray-700">Source Branch:</span> {prDetails.sourceBranchName}
+          <h2 className="text-4xl font-bold mb-6 text-gray-800 border-b pb-4">Pull Request #{prDetails.pr_id}</h2>
+          <div className="grid grid-cols-2 gap-6 mb-8">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Source Branch</h3>
+              <p className="text-gray-600 bg-gray-100 p-2 rounded">{prDetails.sourceBranchName}</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Target Branch</h3>
+              <p className="text-gray-600 bg-gray-100 p-2 rounded">{prDetails.targetBranchName}</p>
+            </div>
           </div>
-          <div className="mb-4">
-            <span className="font-semibold text-gray-700">Target Branch:</span> {prDetails.targetBranchName}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Date Created</h3>
+            <p className="text-gray-600">{new Date(prDetails.date_created).toLocaleString()}</p>
           </div>
-          <div className="mb-4">
-            <span className="font-semibold text-gray-700">Date Created:</span> {new Date(prDetails.date_created).toLocaleString()}
-          </div>
-          <div className="mb-4">
-            <span className="font-semibold text-gray-700">Content:</span>
-            <div className="mt-2 space-y-4">
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Content</h3>
+            <div className="mt-2 space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
               {prDetails.content}
             </div>
           </div>
-          <div className="mb-4">
-            <span className="font-semibold text-gray-700">Feedback:</span>
-            <p className="mt-2 text-gray-700">{prDetails.feedback}</p>
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Feedback</h3>
+            <p className="mt-2 text-gray-600 bg-yellow-50 p-4 rounded-lg border border-yellow-200">{prDetails.feedback}</p>
           </div>
         </div>
-
       )}
     </div>
   );

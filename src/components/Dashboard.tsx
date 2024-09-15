@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FaExternalLinkAlt, FaTrash } from "react-icons/fa";
+import { FaSync, FaExternalLinkAlt } from "react-icons/fa";
 import Link from "next/link";
 
 interface PullRequest {
@@ -47,62 +47,80 @@ const Dashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleDelete = (prId: number) => {
-    console.log(`Delete PR #${prId}`);
-    // Here you would typically make an API call to delete the PR from the database
-  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto flex-grow">
       <div className="flex flex-col items-center">
-        <h1 className="text-3xl font-bold mb-4">Code Review Dashboard</h1>
-        <div className="flex justify-center">
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-            onClick={fetchData}
-          >
-            Fetch Latest PR Review
-          </button>
-        </div>
-        {loading && <p className="text-blue-500 mt-4">Loading...</p>}
-        {error && <p className="text-red-500 mt-4">{error}</p>}
+        <h1 className="text-3xl font-bold mb-6 text-gray-800">Code Review Dashboard</h1>
+        
+        <button
+          className="bg-blue-500 text-white py-2 px-4 rounded-full hover:bg-blue-600 transition duration-300 flex items-center space-x-2 mb-6"
+          onClick={fetchData}
+          disabled={loading}
+        >
+          <FaSync className={`${loading ? 'animate-spin' : ''}`} />
+          <span>{loading ? 'Fetching...' : 'Fetch Latest PR Reviews'}</span>
+        </button>
+
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
+            <p>{error}</p>
+          </div>
+        )}
+
         {prData && (
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-2">Latest Pull Request Review:</h2>
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr>
-                  <th className="border-b-2 p-2">Pull Request</th>
-                  <th className="border-b-2 p-2">Date Added</th>
-                  <th className="border-b-2 p-2">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prData?.length > 0 ? (
-                  prData.map((pr) => (
-                    <tr key={pr.id}>
-                      <td className="border-b p-2">{`${pr.sourceBranchName} to ${pr.targetBranchName} (#${pr.pr_id})`}</td>
-                      <td className="border-b p-2">
-                        {new Date(pr.date_created).toLocaleString()}
-                      </td>
-                      <td className="border-b p-2 flex flex-row">
-                        <Link href={`/pull-requests/${pr.pr_id}`}>
-                          <FaExternalLinkAlt />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(pr.id)}
-                          className="text-red-500 ml-2"
-                        >
-                          <FaTrash />
-                        </button>
+          <div className="w-full bg-white shadow-md rounded-lg overflow-hidden">
+            <div className="px-6 py-2 bg-gray-50">
+              <h2 className="text-xl font-semibold text-gray-800">Latest Pull Request Reviews</h2>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <Link href={`https://bitbucket.org/debugging-dragons/webhook-codedoc/src/main/`} className="hover:underline">
+                <div className="text-sm font-medium text-blue-600">Bitbucket Repo: webhook-codeDoc</div>
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Pull Request</th>
+                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">PR ID</th>
+                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date Added</th>
+                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {prData?.length > 0 ? (
+                    prData.map((pr) => (
+                      <tr key={pr.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-normal">
+                          <Link href={`/pull-requests/${pr.pr_id}`} className="hover:underline">
+                            <div className="text-sm font-medium text-blue-600">{`${pr.sourceBranchName} to ${pr.targetBranchName}`}</div>
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal">
+                          <div className="text-sm text-gray-500">{`#${pr.pr_id}`}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(pr.date_created).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <Link href={`/pull-requests/${pr.pr_id}`} className="text-blue-600 hover:text-blue-900">
+                            <FaExternalLinkAlt className="inline mr-1" />
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                        No pull requests available.
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <p className="text-gray-500 mt-4">No pull requests available.</p>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
