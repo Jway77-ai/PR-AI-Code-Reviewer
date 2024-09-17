@@ -19,11 +19,15 @@ def handle_pr():
         return jsonify({'status': 'error', 'message': 'No pull request data found'}), 400
 
     pr_data = data['pullrequest']
-    pr_id = pr_data['id']
+    pr_id = pr_data.get('id')
+    title = pr_data.get('title', 'No Title')  # Corrected to use .get() method
     source_branch = pr_data['source']['branch']['name']
     target_branch = pr_data['destination']['branch']['name']
-    
+
+    logging.info(f"Processing PR: {pr_id}, Title: {title}")
+
     try:
+        # Example functions to get file diffs, process them, and analyze with LLM
         files_diff = get_files_diff(pr_id)
         files_diff = process_files_diff(files_diff)
         
@@ -33,7 +37,15 @@ def handle_pr():
 
         feedback = analyze_code_with_llm(prompt_text, files_diff)
 
-        new_pr_diff = PR(pr_id=pr_id, sourceBranchName=source_branch, targetBranchName=target_branch, content=files_diff, feedback=feedback)
+        # Save the PR data, including the title, to the database
+        new_pr_diff = PR(
+            pr_id=pr_id,
+            title=title,
+            sourceBranchName=source_branch,
+            targetBranchName=target_branch,
+            content=files_diff,
+            feedback=feedback
+        )
         db.session.add(new_pr_diff)
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Pull request processed successfully'}), 200
@@ -54,6 +66,7 @@ def summary():
         
         entries = [{
             'id': entry.id,
+            'title': entry.title,
             'pr_id': entry.pr_id,
             'sourceBranchName': entry.sourceBranchName,
             'targetBranchName': entry.targetBranchName,
@@ -76,6 +89,7 @@ def latest():
             return jsonify({'message': 'No entries found in the database.'}), 200
         return jsonify({'entry': {
             'id': latest_entry.id,
+            'title': latest_entry.title,
             'pr_id': latest_entry.pr_id,
             'sourceBranchName': latest_entry.sourceBranchName,
             'targetBranchName': latest_entry.targetBranchName,
@@ -101,6 +115,7 @@ def pr_entry(pr_id):
             pr_data = {
                 'id': pr_entry.id,
                 'pr_id': pr_entry.pr_id,
+                'title': pr_entry.title,
                 'sourceBranchName': pr_entry.sourceBranchName,
                 'targetBranchName': pr_entry.targetBranchName,
                 'content': pr_entry.content,
