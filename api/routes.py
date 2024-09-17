@@ -20,7 +20,7 @@ def handle_pr():
 
     pr_data = data['pullrequest']
     pr_id = pr_data.get('id')
-    title = pr_data.get('title', 'No Title')  # Corrected to use .get() method
+    title = pr_data.get('title', 'No Title') 
     source_branch = pr_data['source']['branch']['name']
     target_branch = pr_data['destination']['branch']['name']
 
@@ -60,10 +60,12 @@ def handle_pr():
 @main.route('/api/summary', methods=['GET'])
 def summary():
     try:
-        numEntriesToDisplay = int(os.getenv("NUMENTRIESTODISPLAY", 15))  # Display 15 by default
-        # Query the latest 15 entries, ordered by date_created in descending order
+        numEntriesToDisplay = int(os.getenv("NUMENTRIESTODISPLAY", 15))
         latest_entries = PR.query.order_by(PR.date_created.desc()).limit(numEntriesToDisplay).all()
-        
+
+        if not latest_entries:
+            logging.info("No entries found in the database.")
+
         entries = [{
             'id': entry.id,
             'title': entry.title,
@@ -74,7 +76,8 @@ def summary():
             'feedback': entry.feedback,
             'date_created': entry.date_created.isoformat()
         } for entry in latest_entries]
-        
+
+        logging.info(f"Fetched {len(entries)} entries from the database.")
         return jsonify({'entries': entries}), 200
     except Exception as e:
         logging.error(f"Error fetching summary: {e}")

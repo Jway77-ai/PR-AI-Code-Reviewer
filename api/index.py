@@ -14,7 +14,6 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
-    logging.basicConfig(level=logging.DEBUG)
     CORS(app)
 
     # Attempt to construct the PostgreSQL DATABASE_URL from environment variables
