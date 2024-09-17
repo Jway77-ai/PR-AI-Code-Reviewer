@@ -5,7 +5,6 @@ from datetime import datetime
 class PR(db.Model):
     __tablename__ = 'PR'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=True)
     pr_id = db.Column(db.String(200), nullable=False)
     sourceBranchName = db.Column(db.String(200), nullable=False)
     targetBranchName = db.Column(db.String(200), nullable=False)
