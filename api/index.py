@@ -13,10 +13,6 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
-<<<<<<< HEAD
-=======
-    
->>>>>>> parent of c57bc78 (Backend - Added Title)
     CORS(app)
 
     # Attempt to construct the PostgreSQL DATABASE_URL from environment variables
