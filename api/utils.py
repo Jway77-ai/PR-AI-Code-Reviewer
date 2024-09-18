@@ -12,36 +12,75 @@ from requests.auth import HTTPBasicAuth
 # Load environment variables from the .env file
 load_dotenv()
 
-def get_pr_from_repo(pr_id):
-    # Retrieve OAuth credentials from environment variables
-    BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")  # Your OAuth consumer key
-    BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")  # Your OAuth consumer secret
-    # Request URL for access token (using client credentials flow)
-    token_url = "https://bitbucket.org/site/oauth2/access_token"
-    # Request the access token
-    response = requests.post(
-        token_url,
-        data={"grant_type": "client_credentials"},
-        auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
-    )
-
-    if response.status_code == 200:
-        access_token = response.json().get("access_token")
-
-        # Retrieve repository details from environment variables
+def get_all_prs_from_repo():
+    """
+    Fetch all pull requests from Bitbucket repository.
+    """
+    try:
+        BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")
+        BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")
         BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
         BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
 
-        # URL to get the pull request diff
-        url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
-        headers = {'Authorization': f'Bearer {access_token}'}
+        # Obtain access token
+        token_url = "https://bitbucket.org/site/oauth2/access_token"
+        response = requests.post(
+            token_url,
+            data={"grant_type": "client_credentials"},
+            auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
+        )
+        if response.status_code == 200:
+            access_token = response.json().get("access_token")
 
-        # Make the request to get the pull request diff
-        reply = requests.get(url, headers=headers)
-        return reply
-    else:
-        logging.error(f"Failed to get access token: {response.status_code}, {response.text}")
-        raise Exception("Failed to get access token")
+            # URL to get all pull requests
+            url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests"
+            headers = {'Authorization': f'Bearer {access_token}'}
+
+            # Make the request to fetch all PRs
+            reply = requests.get(url, headers=headers)
+            if reply.status_code == 200:
+                return reply.json()
+            else:
+                logging.error(f"Failed to fetch PRs: {reply.status_code}, {reply.text}")
+                raise Exception(f"Failed to fetch PRs: {reply.status_code}")
+        else:
+            logging.error(f"Failed to get access token: {response.status_code}, {response.text}")
+            raise Exception("Failed to get access token")
+    except Exception as e:
+        logging.error(f"Error fetching PRs from Bitbucket: {e}")
+        raise
+
+def get_pr_from_repo(pr_id):
+    #Improved try catch for error logging
+    try:
+        BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")
+        BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")
+
+        token_url = "https://bitbucket.org/site/oauth2/access_token"
+        response = requests.post(
+            token_url,
+            data={"grant_type": "client_credentials"},
+            auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
+        )
+        if response.status_code == 200:
+            access_token = response.json().get("access_token")
+            BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
+            BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
+            url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/{pr_id}/diff"
+            headers = {'Authorization': f'Bearer {access_token}'}
+
+            reply = requests.get(url, headers=headers)
+            if reply.status_code == 200:
+                return reply
+            else:
+                logging.error(f"Failed to fetch PR: {reply.status_code}, {reply.text}")
+                raise Exception(f"Failed to fetch PR: {reply.status_code}")
+        else:
+            logging.error(f"Failed to get access token: {response.status_code}, {response.text}")
+            raise Exception("Failed to get access token")
+    except Exception as e:
+        logging.error(f"Error fetching PR from Bitbucket: {e}")
+        raise
 
 def get_files_diff(pr_id):
     """

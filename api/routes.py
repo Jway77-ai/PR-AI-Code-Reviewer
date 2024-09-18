@@ -1,6 +1,7 @@
+from datetime import datetime
 from flask import Blueprint, request, jsonify
 from .models import PR
-from .utils import get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM
+from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM
 #from .extensions import db
 from .index import db
 import os
@@ -12,6 +13,60 @@ load_dotenv()
 
 main = Blueprint('main', __name__)
 
+@main.route('/api/sync_prs', methods=['POST'])
+def sync_all_prs():
+    """
+    Sync all PRs from Bitbucket and save them to the database.
+    """
+    try:
+        pr_list = get_all_prs_from_repo()
+        if 'values' not in pr_list:
+            return jsonify({'status': 'error', 'message': 'No PRs found'}), 400
+
+        for pr_data in pr_list['values']:
+            pr_id = str(pr_data.get('id'))  # Cast the PR ID to a string
+            title = pr_data.get('title', 'No Title')
+            source_branch = pr_data['source']['branch']['name']
+            target_branch = pr_data['destination']['branch']['name']
+
+            # Check if the PR already exists in the database
+            existing_pr = PR.query.filter_by(pr_id=pr_id).first()
+            if existing_pr:
+                continue  # Skip if PR already exists
+
+            logging.info(f"Processing PR: {pr_id}, Title: {title}")
+
+            # Fetch the PR diff from Bitbucket
+            files_diff = get_files_diff(pr_id)
+            processed_diff = process_files_diff(files_diff)
+
+            # Example LLM analysis (optional)
+            prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
+            with open(prompt_file_path, 'r') as file:
+                prompt_text = file.read().strip()
+            feedback = analyze_code_with_llm(prompt_text, processed_diff)
+
+            # Insert the fetched PR data into the PostgreSQL database
+            new_pr_diff = PR(
+                pr_id=pr_id,
+                title=title,
+                sourceBranchName=source_branch,
+                targetBranchName=target_branch,
+                content=processed_diff,
+                feedback=feedback,
+                date_created=datetime.now()
+            )
+            db.session.add(new_pr_diff)
+            db.session.commit()
+
+        return jsonify({'status': 'success', 'message': 'All PRs synced and saved successfully'}), 200
+    except Exception as e:
+        logging.error(f"Error syncing PRs: {e}")
+        logging.error(f"Error type: {type(e).__name__}")
+        logging.error(f"Error details: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
+
 @main.route('/api/pr', methods=['POST'])
 def handle_pr():
     data = request.json
@@ -20,35 +75,36 @@ def handle_pr():
 
     pr_data = data['pullrequest']
     pr_id = pr_data.get('id')
-    title = pr_data.get('title', 'No Title') 
+    title = pr_data.get('title', 'No Title')  
     source_branch = pr_data['source']['branch']['name']
     target_branch = pr_data['destination']['branch']['name']
 
     logging.info(f"Processing PR: {pr_id}, Title: {title}")
 
     try:
-        # Example functions to get file diffs, process them, and analyze with LLM
+        # Fetch the PR diff from Bitbucket
         files_diff = get_files_diff(pr_id)
-        files_diff = process_files_diff(files_diff)
-        
+        processed_diff = process_files_diff(files_diff)
+
+        # Example LLM analysis (optional)
         prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
         with open(prompt_file_path, 'r') as file:
             prompt_text = file.read().strip()
+        feedback = analyze_code_with_llm(prompt_text, processed_diff)
 
-        feedback = analyze_code_with_llm(prompt_text, files_diff)
-
-        # Save the PR data, including the title, to the database
+        # Insert the fetched PR data into the PostgreSQL database
         new_pr_diff = PR(
             pr_id=pr_id,
             title=title,
             sourceBranchName=source_branch,
             targetBranchName=target_branch,
-            content=files_diff,
-            feedback=feedback
+            content=processed_diff,
+            feedback=feedback,
+            date_created=datetime.now()
         )
         db.session.add(new_pr_diff)
         db.session.commit()
-        return jsonify({'status': 'success', 'message': 'Pull request processed successfully'}), 200
+        return jsonify({'status': 'success', 'message': 'Pull request processed and saved successfully'}), 200
     except FileNotFoundError:
         logging.error(f"Prompt file not found: {prompt_file_path}")
         return jsonify({'error': 'Prompt file not found'}), 404
@@ -60,29 +116,32 @@ def handle_pr():
 @main.route('/api/summary', methods=['GET'])
 def summary():
     try:
-        numEntriesToDisplay = int(os.getenv("NUMENTRIESTODISPLAY", 15))
+        numEntriesToDisplay = int(os.getenv("NUMENTRIESTODISPLAY", 15))  # Display 15 by default
+        
+        # Query the latest entries, ordered by date_created in descending order
         latest_entries = PR.query.order_by(PR.date_created.desc()).limit(numEntriesToDisplay).all()
-
-        if not latest_entries:
-            logging.info("No entries found in the database.")
-
-        entries = [{
-            'id': entry.id,
-            'title': entry.title,
-            'pr_id': entry.pr_id,
-            'sourceBranchName': entry.sourceBranchName,
-            'targetBranchName': entry.targetBranchName,
-            'content': entry.content,
-            'feedback': entry.feedback,
-            'date_created': entry.date_created.isoformat()
-        } for entry in latest_entries]
-
-        logging.info(f"Fetched {len(entries)} entries from the database.")
+        
+        # Build the response while handling None values for date_created
+        entries = []
+        for entry in latest_entries:
+            entries.append({
+                'id': entry.id,
+                'title': entry.title,
+                'pr_id': entry.pr_id,
+                'sourceBranchName': entry.sourceBranchName,
+                'targetBranchName': entry.targetBranchName,
+                'content': entry.content,
+                'feedback': entry.feedback,
+                'date_created': entry.date_created.isoformat() if entry.date_created else None  # Handle None here
+            })
+        # Log the entries for debugging purposes
+        logging.info(f"Entries: {entries}")
+        
         return jsonify({'entries': entries}), 200
     except Exception as e:
-        logging.error(f"Error fetching summary: {str(e)}")
+        logging.error(f"Error fetching summary: {e}")
         logging.error(f"Error type: {type(e).__name__}")
-        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 @main.route('/api/latest', methods=['GET'])
 def latest():
