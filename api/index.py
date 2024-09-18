@@ -36,14 +36,15 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
-    migrate.init_app(app, db)
+    
+    # Set up Flask-Migrate to use the root directory for migrations
+    migrations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'migrations')
+    migrate.init_app(app, db, directory=migrations_dir)
 
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
-    # Apply ProxyFix for Vercel
     app.wsgi_app = ProxyFix(app.wsgi_app)
-
     return app
 
 app = create_app()

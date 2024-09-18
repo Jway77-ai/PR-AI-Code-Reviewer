@@ -80,8 +80,9 @@ def summary():
         logging.info(f"Fetched {len(entries)} entries from the database.")
         return jsonify({'entries': entries}), 200
     except Exception as e:
-        logging.error(f"Error fetching summary: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        logging.error(f"Error fetching summary: {str(e)}")
+        logging.error(f"Error type: {type(e).__name__}")
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
 @main.route('/api/latest', methods=['GET'])
 def latest():

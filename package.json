@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"python -m flask --app api.index:app run --debug --port 8000\"",
+    "dev": "concurrently \"next dev\" \"python -m flask --app api.index run --debug --port 8000\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -11,24 +11,24 @@
   "dependencies": {
     "@vercel/postgres": "^0.10.0",
     "clsx": "^2.1.1",
-    "next": "14.2.8",
-    "react": "^18",
-    "react-dom": "^18",
+    "next": "14.2.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "uob-hackathon-dragons": "file:"
   },
   "devDependencies": {
     "@radix-ui/react-tabs": "^1.1.0",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "concurrently": "^9.0.0",
-    "eslint": "^8",
+    "@types/node": "^20.16.5",
+    "@types/react": "^18.3.7",
+    "@types/react-dom": "^18.3.0",
+    "concurrently": "^9.0.1",
+    "eslint": "^8.57.1",
     "eslint-config-next": "14.2.8",
-    "postcss": "^8",
+    "postcss": "^8.4.47",
     "react-icons": "^5.3.0",
-    "tailwindcss": "^3.4.10",
-    "typescript": "^5"
+    "tailwindcss": "^3.4.12",
+    "typescript": "^5.6.2"
   }
 }

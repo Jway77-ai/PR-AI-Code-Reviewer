@@ -1,16 +1,16 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
   "builds": [
     {
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb"
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.9",
+        "buildCommand": "pip install -r api/requirements.txt && cd api && flask db upgrade"
       }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
     }
   ],
   "routes": [
