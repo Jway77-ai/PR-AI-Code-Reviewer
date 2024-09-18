@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"next dev\" \"python -m flask --app api.index run --debug --port 8000\"",
-    "build": "next build",
+    "build": "next build && echo \"Flask will be handled by Vercel directly\"",
     "start": "next start",
     "lint": "next lint"
   },
