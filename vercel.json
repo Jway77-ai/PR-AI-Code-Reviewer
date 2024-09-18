@@ -7,9 +7,7 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.9",
-        "buildCommand": "pip install -r api/requirements.txt && cd api && flask db upgrade"
+        "maxLambdaSize": "15mb"
       }
     }
   ],
