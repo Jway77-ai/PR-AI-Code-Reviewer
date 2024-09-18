@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
   "builds": [
     {
       "src": "api/index.py",
@@ -9,6 +7,10 @@
       "config": {
         "maxLambdaSize": "15mb"
       }
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
     }
   ],
   "routes": [
