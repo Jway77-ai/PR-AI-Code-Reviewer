@@ -1,67 +1,189 @@
+// components/Chatbot.tsx
+
 "use client";
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from "react";
 
-const Chatbot: React.FC = () => {
-    const [messages, setMessages] = useState<{ user: string; bot: string }[]>([]);
-    const [input, setInput] = useState<string>("");
+interface Props {
+  prId: string;
+}
 
-    const handleSend = async () => {
-        if (!input.trim()) return; // Ignore empty messages
+interface ConversationItem {
+  id: number;
+  message: string;
+  date_created: string;
+}
 
-        const userMessage = input;
-        setInput("");
+interface Message {
+  user: string;
+  bot: string;
+}
 
-        // Add user's message to chat
-        setMessages(prevMessages => [...prevMessages, { user: userMessage, bot: '' }]);
+const Chatbot: React.FC<Props> = ({ prId }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-        // Simulate a delay for the bot's response
-        setTimeout(() => {
-            // Simulate bot's response based on user message
-            let botResponse = "I don't understand the question.";
+  const fetchConversationHistory = useCallback(async () => {
+    if (!prId) {
+      console.error("Cannot fetch conversation history: No PR ID provided");
+      setError("No PR ID available. Unable to fetch conversation history.");
+      return;
+    }
+    setError(null);
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/pr/${prId}/conversations`
+      );
+      const data = await response.json();
 
-            if (userMessage.toLowerCase().includes("diff")) {
-                botResponse = "Here is a mock diff for your pull request.";
-            } else if (userMessage.toLowerCase().includes("code quality")) {
-                botResponse = "You could improve code quality by using more descriptive variable names.";
-            }
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch conversation history");
+      }
 
-            console.log("Bot Response:", botResponse); // Debugging line
+      const formattedMessages: Message[] = data.conversations.map(
+        (conv: ConversationItem) => ({
+          user: conv.message,
+          bot: "",
+        })
+      );
 
-            // Add bot's response to chat
-            setMessages(prevMessages => [...prevMessages, { user: '', bot: botResponse }]);
-        }, 1000); // 1-second delay for simulation
-    };
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error("Error fetching conversation history:", error);
+      setError("Failed to fetch conversation history. Please try again.");
+    }
+  }, [prId]);
 
-    return (
-        <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col h-80">
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {messages.map((msg, idx) => (
-                    <div
-                        key={idx}
-                        className={`p-2 rounded-lg ${msg.user ? 'bg-blue-100 text-blue-800 self-end' : 'bg-gray-200 text-gray-800 self-start'}`}
-                    >
-                        <p className="font-semibold">{msg.user ? 'You:' : 'Bot:'}</p>
-                        <p>{msg.user || msg.bot}</p>
-                    </div>
-                ))}
-            </div>
-            <div className="flex mt-2">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask about diffs or code quality..."
-                    className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                    onClick={handleSend}
-                    className="p-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    Send
-                </button>
-            </div>
-        </div>
-    );
+  useEffect(() => {
+    console.log("Current prId:", prId); // For debugging
+    fetchConversationHistory();
+  }, [fetchConversationHistory, prId]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return; // Ignore empty messages
+    setLoading(true);
+    setError(null);
+
+    const userMessage = input;
+    setInput("");
+
+    // Add user's message to chat
+    const newMessages = [...messages, { user: userMessage, bot: "" }];
+    setMessages(newMessages);
+
+    try {
+      // Save user message
+      await sendConversationToAPI(userMessage);
+
+      // Send user message to Flask API to get the bot response
+      const response = await fetch("http://127.0.0.1:8000/api/groq-response", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage, prId: prId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get response from API.");
+      }
+
+      const botResponse = data.response;
+
+      // Add bot's response to chat
+      const updatedMessages = [...newMessages, { user: "", bot: botResponse }];
+      setMessages(updatedMessages);
+
+      // Save bot response
+      await sendConversationToAPI(botResponse);
+    } catch (error) {
+      console.error("Error fetching bot response:", error);
+      setError(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !loading) {
+      handleSend();
+    }
+  };
+
+  const sendConversationToAPI = async (message: string) => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/pr/${prId}/conversation`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(
+          "Error saving conversation:",
+          response.status,
+          data.message
+        );
+        throw new Error(data.message || "Failed to save conversation");
+      } else {
+        console.log("Conversation saved successfully!");
+      }
+    } catch (err) {
+      console.error("Error sending conversation to API:", err);
+      throw err;
+    }
+  };
+
+  return (
+    <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col h-80">
+      {error && <div className="text-red-500 mb-2">{error}</div>}
+      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`p-2 rounded-lg ${
+              msg.user
+                ? "bg-blue-100 text-blue-800 self-end"
+                : "bg-gray-200 text-gray-800 self-start"
+            }`}
+          >
+            <p className="font-semibold">{msg.user ? "You:" : "Bot:"}</p>
+            <p>{msg.user || msg.bot}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex mt-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask about diffs or code quality..."
+          className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={loading}
+        />
+        <button
+          onClick={handleSend}
+          className="p-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={loading}
+        >
+          {loading ? "Sending..." : "Send"}
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export default Chatbot;

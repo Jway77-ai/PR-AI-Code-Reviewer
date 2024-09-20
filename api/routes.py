@@ -1,10 +1,12 @@
 from datetime import datetime
 from flask import Blueprint, request, jsonify
-from .models import PR
+from groq import Groq
+from .models import PR, Conversation
 from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM
 #from .extensions import db
 from .index import db
 import os
+import requests
 import logging
 from dotenv import load_dotenv
 
@@ -15,9 +17,6 @@ main = Blueprint('main', __name__)
 
 @main.route('/api/sync_prs', methods=['POST'])
 def sync_all_prs():
-    """
-    Sync all PRs from Bitbucket and save them to the database.
-    """
     try:
         pr_list = get_all_prs_from_repo()
         if 'values' not in pr_list:
@@ -35,19 +34,15 @@ def sync_all_prs():
             if existing_pr:
                 continue  # Skip if PR already exists
 
-            logging.info(f"Processing PR: {pr_id}, Title: {title}")
-
-            # Fetch the PR diff from Bitbucket
+            # Process PR diff and feedback
             files_diff = get_files_diff(pr_id)
             processed_diff = process_files_diff(files_diff)
-
-            # Example LLM analysis (optional)
             prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
             with open(prompt_file_path, 'r') as file:
                 prompt_text = file.read().strip()
             feedback = analyze_code_with_llm(prompt_text, processed_diff)
 
-            # Insert the fetched PR data into the PostgreSQL database
+            # Insert new PR data with latest feedback
             new_pr_diff = PR(
                 pr_id=pr_id,
                 title=title,
@@ -55,7 +50,7 @@ def sync_all_prs():
                 sourceBranchName=source_branch,
                 targetBranchName=target_branch,
                 content=processed_diff,
-                feedback=feedback,
+                feedback=feedback,  # Latest feedback
                 date_created=datetime.now()
             )
             db.session.add(new_pr_diff)
@@ -64,21 +59,29 @@ def sync_all_prs():
         return jsonify({'status': 'success', 'message': 'All PRs synced and saved successfully'}), 200
     except Exception as e:
         logging.error(f"Error syncing PRs: {e}")
-        logging.error(f"Error type: {type(e).__name__}")
-        logging.error(f"Error details: {str(e)}")
         db.session.rollback()
         return jsonify({'error': 'Internal server error'}), 500
 
 @main.route('/api/pr', methods=['POST'])
 def handle_pr():
     data = request.json
-    if 'pullrequest' not in data:
-        return jsonify({'status': 'error', 'message': 'No pull request data found'}), 400
 
-    pr_data = data['pullrequest']
-    status = data['state']
+    # Check if "state" exists at the top level and "pullrequest" exists in the request data
+    if 'state' not in data:
+        return jsonify({'status': 'error', 'message': 'State not found in the request data'}), 400
+
+    if 'pullrequest' not in data:
+        return jsonify({'status': 'error', 'message': 'Pull request data not found'}), 400
+
+    # Access the pullrequest object and state
+    pr_data = data.get('pullrequest')
+    status = data.get('state')  # Getting the 'state' from the main body
+
     pr_id = pr_data.get('id')
-    title = pr_data.get('title', 'No Title')  
+    if pr_id is None:
+        return jsonify({'status': 'error', 'message': 'PR ID not found'}), 400
+
+    title = pr_data.get('title', 'No Title')
     source_branch = pr_data['source']['branch']['name']
     target_branch = pr_data['destination']['branch']['name']
 
@@ -99,15 +102,16 @@ def handle_pr():
         new_pr_diff = PR(
             pr_id=pr_id,
             title=title,
-            status=status,
+            status=status,  # Now fetching status from 'state' field in the main body
             sourceBranchName=source_branch,
             targetBranchName=target_branch,
             content=processed_diff,
             feedback=feedback,
-            date_created=datetime.now()
+            date_created=datetime.now()  # Adjusted to use current date-time
         )
         db.session.add(new_pr_diff)
         db.session.commit()
+
         return jsonify({'status': 'success', 'message': 'Pull request processed and saved successfully'}), 200
     except FileNotFoundError:
         logging.error(f"Prompt file not found: {prompt_file_path}")
@@ -129,7 +133,6 @@ def summary():
         entries = []
         for entry in latest_entries:
             entries.append({
-                'id': entry.id,
                 'title': entry.title,
                 'status':entry.status,
                 'pr_id': entry.pr_id,
@@ -156,7 +159,6 @@ def latest():
         if not latest_entry:
             return jsonify({'message': 'No entries found in the database.'}), 200
         return jsonify({'entry': {
-            'id': latest_entry.id,
             'title': latest_entry.title,
             'status':latest_entry.status,
             'pr_id': latest_entry.pr_id,
@@ -181,8 +183,73 @@ def pr_entry(pr_id):
             pr_entry = PR.query.filter_by(pr_id=pr_id).first()
             if pr_entry is None:
                 return jsonify({'error': 'PR not found'}), 404
+
+            # Fetch conversation history (if needed)
+            conversations = Conversation.query.filter_by(pr_id=pr_id).order_by(Conversation.date_created.asc()).all()
+            conversation_history = [{
+                'id': conv.id,
+                'message': conv.message,
+                'date_created': conv.date_created.isoformat()
+            } for conv in conversations]
+
             pr_data = {
-                'id': pr_entry.id,
+                'pr_id': pr_entry.pr_id,
+                'title': pr_entry.title,
+                'status': pr_entry.status,
+                'sourceBranchName': pr_entry.sourceBranchName,
+                'targetBranchName': pr_entry.targetBranchName,
+                'content': pr_entry.content,
+                'feedback': pr_entry.feedback,
+                'conversation_history': conversation_history,
+                'date_created': pr_entry.date_created.isoformat()
+            }
+            return jsonify(pr_data), 200
+        except Exception as e:
+            logging.error(f"Error fetching PR {pr_id}: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
+
+    elif request.method == 'POST':  # Handle POST for querying the AI
+        try:
+            user_query = request.form.get('user_query')
+            if not user_query:
+                return jsonify({'error': 'No user query provided'}), 400
+
+            # Load the prompt from the file
+            prompt_file_path = os.path.join(os.path.dirname(__file__), 'furtherPrompt')
+            if not os.path.exists(prompt_file_path):
+                return jsonify({'error': 'Prompt file not found'}), 404
+            
+            with open(prompt_file_path, 'r') as file:
+                prompt_text = file.read().strip()
+
+            # Fetch the PR entry from the DB
+            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+            if pr_entry is None:
+                return jsonify({'error': 'PR not found'}), 404
+
+            # Create the AI prompt with PR details
+            prompt_text += f"\nPull request contents: {pr_entry.content}\nYour previous feedback: {pr_entry.feedback}"
+            new_feedback = queryLLM(prompt_text, user_query)
+
+            # Update PR feedback in the database
+            pr_entry.feedback = new_feedback
+            db.session.commit()
+
+            return jsonify({'status': 'success', 'feedback': new_feedback}), 200
+        except FileNotFoundError:
+            logging.error(f"Prompt file not found: {prompt_file_path}")
+            return jsonify({'error': 'Prompt file not found'}), 404
+        except Exception as e:
+            logging.error(f"Error processing PR {pr_id}: {e}")
+            db.session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+
+    if request.method == 'GET':
+        try:
+            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+            if pr_entry is None:
+                return jsonify({'error': 'PR not found'}), 404
+            pr_data = {
                 'pr_id': pr_entry.pr_id,
                 'title': pr_entry.title,
                 'status':pr_entry.status,
@@ -216,3 +283,122 @@ def pr_entry(pr_id):
         except Exception as e:
             logging.error(f"Error fetching PR {pr_id}: {e}")
             return jsonify({'error': 'Internal server error'}), 500
+        
+#Capture latest feedback
+@main.route('/api/pr/<string:pr_id>/feedback', methods=['POST'])
+def update_feedback(pr_id):
+    data = request.json
+    new_feedback = data.get('feedback')
+
+    if not new_feedback:
+        return jsonify({'status': 'error', 'message': 'No feedback provided'}), 400
+
+    try:
+        pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+        if not pr_entry:
+            return jsonify({'status': 'error', 'message': 'PR not found'}), 404
+
+        # Update the latest feedback in the PR table
+        pr_entry.feedback = new_feedback
+        db.session.commit()
+
+        return jsonify({'status': 'success', 'message': 'Feedback updated successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating feedback: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+    
+#maintain convo history
+@main.route('/api/pr/<string:pr_id>/conversation', methods=['POST'])
+def add_conversation(pr_id):
+    data = request.json
+
+    if 'message' not in data:
+        return jsonify({'status': 'error', 'message': 'Message is missing'}), 400
+
+    try:
+        pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+        if not pr_entry:
+            return jsonify({'status': 'error', 'message': 'PR not found'}), 404
+
+        # Add a new conversation entry
+        new_conversation = Conversation(
+            pr_id=pr_id,
+            message=data.get('message'),
+            date_created=datetime.now()  # Use current time
+        )
+        db.session.add(new_conversation)
+        db.session.commit()
+
+        return jsonify({'status': 'success', 'message': 'Conversation added successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error adding conversation: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+    
+@main.route('/api/pr/<string:pr_id>/conversations', methods=['GET'])
+def get_conversations(pr_id):
+    try:
+        conversations = Conversation.query.filter_by(pr_id=pr_id).order_by(Conversation.date_created.asc()).all()
+
+        response = [{
+            'id': conv.id,
+            'message': conv.message,
+            'date_created': conv.date_created.isoformat()
+        } for conv in conversations]
+
+        return jsonify({'conversations': response}), 200
+    except Exception as e:
+        logging.error(f"Error fetching conversations: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+# Groq API interaction route
+@main.route('/api/groq-response', methods=['POST'])
+def groq_response():
+    try:
+        # Extract JSON data from the request
+        data = request.json
+        user_message = data.get('message')
+
+        # Check if the message exists
+        if not user_message:
+            logging.error("No message provided by user")
+            return jsonify({'error': 'No message provided'}), 400
+
+        # Groq API key from environment variables
+        groq_api_key = os.getenv('GROQ_API_KEY')
+        if not groq_api_key:
+            logging.error("GROQ_API_KEY missing in environment")
+            return jsonify({'error': 'API key missing'}), 500
+
+        # Groq API endpoint and request details
+        groq_url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            'Authorization': f'Bearer {groq_api_key}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            "model": "llama3-8b-8192",  # Confirm that this is the correct model
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_message}
+            ]
+        }
+
+        # Make a POST request to Groq API
+        logging.info(f"Sending message to Groq API: {user_message}")
+        response = requests.post(groq_url, headers=headers, json=payload)
+
+        # Check for successful response from Groq API
+        if response.status_code == 200:
+            bot_response = response.json().get('choices', [])[0]['message']['content']
+            logging.info(f"Received response from Groq API: {bot_response}")
+            return jsonify({'response': bot_response}), 200
+        else:
+            logging.error(f"Failed to get response from Groq API, status code: {response.status_code}, response: {response.text}")
+            return jsonify({'error': 'Failed to get response from Groq API'}), 500
+
+    except Exception as e:
+        logging.error(f"Error in groq_response: {e}")
+        return jsonify({'error': str(e)}), 500

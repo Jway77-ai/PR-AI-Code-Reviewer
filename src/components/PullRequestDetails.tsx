@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 interface PullRequest {
   id: number;
   title: string;
+  status: string;
   pr_id: string;
   sourceBranchName: string;
   targetBranchName: string;
@@ -89,13 +90,21 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
               </p>
             </div>
           </div>
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              Date Created
-            </h3>
-            <p className="text-gray-600">
-              {new Date(prDetails.date_created).toLocaleString()}
-            </p>
+          <div className="grid grid-cols-2 gap-6 mb-8">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Date Created
+              </h3>
+              <p className="text-gray-600">
+                {new Date(prDetails.date_created).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Status
+              </h3>
+              <p className="text-gray-600">{prDetails.status}</p>
+            </div>
           </div>
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">

@@ -4,9 +4,9 @@ import { FaSync, FaExternalLinkAlt } from "react-icons/fa";
 import Link from "next/link";
 
 interface PullRequest {
-  id: number;
+  pr_id: number;
   title: string;
-  pr_id: string;
+  status: string;
   sourceBranchName: string;
   targetBranchName: string;
   date_created: string;
@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
                 <tbody className="divide-y divide-gray-200">
                   {prData?.length > 0 ? (
                     prData.map((pr) => (
-                      <tr key={pr.id} className="hover:bg-gray-50">
+                      <tr key={pr.pr_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-normal">
                           <Link
                             href={`/pull-requests/${pr.pr_id}`}
