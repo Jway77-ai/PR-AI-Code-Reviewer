@@ -26,6 +26,7 @@ def sync_all_prs():
         for pr_data in pr_list['values']:
             pr_id = str(pr_data.get('id'))  # Cast the PR ID to a string
             title = pr_data.get('title', 'No Title')
+            status = pr_data.get('state')
             source_branch = pr_data['source']['branch']['name']
             target_branch = pr_data['destination']['branch']['name']
 
@@ -50,6 +51,7 @@ def sync_all_prs():
             new_pr_diff = PR(
                 pr_id=pr_id,
                 title=title,
+                status=status,
                 sourceBranchName=source_branch,
                 targetBranchName=target_branch,
                 content=processed_diff,
@@ -74,12 +76,13 @@ def handle_pr():
         return jsonify({'status': 'error', 'message': 'No pull request data found'}), 400
 
     pr_data = data['pullrequest']
+    status = data['state']
     pr_id = pr_data.get('id')
     title = pr_data.get('title', 'No Title')  
     source_branch = pr_data['source']['branch']['name']
     target_branch = pr_data['destination']['branch']['name']
 
-    logging.info(f"Processing PR: {pr_id}, Title: {title}")
+    logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
 
     try:
         # Fetch the PR diff from Bitbucket
@@ -96,6 +99,7 @@ def handle_pr():
         new_pr_diff = PR(
             pr_id=pr_id,
             title=title,
+            status=status,
             sourceBranchName=source_branch,
             targetBranchName=target_branch,
             content=processed_diff,
@@ -127,6 +131,7 @@ def summary():
             entries.append({
                 'id': entry.id,
                 'title': entry.title,
+                'status':entry.status,
                 'pr_id': entry.pr_id,
                 'sourceBranchName': entry.sourceBranchName,
                 'targetBranchName': entry.targetBranchName,
@@ -153,6 +158,7 @@ def latest():
         return jsonify({'entry': {
             'id': latest_entry.id,
             'title': latest_entry.title,
+            'status':latest_entry.status,
             'pr_id': latest_entry.pr_id,
             'sourceBranchName': latest_entry.sourceBranchName,
             'targetBranchName': latest_entry.targetBranchName,
@@ -179,6 +185,7 @@ def pr_entry(pr_id):
                 'id': pr_entry.id,
                 'pr_id': pr_entry.pr_id,
                 'title': pr_entry.title,
+                'status':pr_entry.status,
                 'sourceBranchName': pr_entry.sourceBranchName,
                 'targetBranchName': pr_entry.targetBranchName,
                 'content': pr_entry.content,
