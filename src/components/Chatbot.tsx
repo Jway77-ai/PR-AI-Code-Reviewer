@@ -74,7 +74,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
 
     try {
       // Save user message
-      await sendConversationToAPI(userMessage);
+      await sendConversationToAPI(userMessage, "User");
 
       // Send user message to Flask API to get the bot response
       const response = await fetch(`http://127.0.0.1:8000/api/pr/${prId}/groq-response`, {
@@ -98,7 +98,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       setMessages(updatedMessages);
 
       // Save bot response
-      await sendConversationToAPI(botResponse);
+      await sendConversationToAPI(botResponse, "System");
     } catch (error) {
       console.error("Error fetching bot response:", error);
       setError(
@@ -115,7 +115,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
     }
   };
 
-  const sendConversationToAPI = async (message: string) => {
+  const sendConversationToAPI = async (message: string, role: string) => {
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/api/pr/${prId}/conversation`,
@@ -124,7 +124,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, role }),
         }
       );
 

@@ -246,13 +246,13 @@ def add_conversation(pr_id):
         pr_entry = PR.query.filter_by(pr_id=pr_id).first()
         if not pr_entry:
             return jsonify({'status': 'error', 'message': 'PR not found'}), 404
-
+        
         # Add a new conversation entry
         new_conversation = Conversation(
             pr_id=pr_id,
             message=data.get('message'),
             date_created=datetime.now(),  # Use current time
-            role = "User"
+            role = data.get('role', 'User')
         )
         db.session.add(new_conversation)
         db.session.commit()
@@ -317,6 +317,8 @@ def groq_response(pr_id):
         pr_entry = PR.query.filter_by(pr_id=pr_id).first()
         if pr_entry is None:
             return jsonify({'error': 'PR not found'}), 404
+        if not pr_entry.initialFeedback:
+            pr_entry.initialFeedback = pr_entry.feedback
         prompt_text += "\nPull request contents: " + pr_entry.content + "\nYour initial feedback of the pull request: " + pr_entry.initialFeedback + "\nConversation history between you and the user about the code and feedback:\n"
 
         # Retrieve all messages related to this pr_id
@@ -329,7 +331,7 @@ def groq_response(pr_id):
         # Convert chat history to string and append to prompt
         pr_chat_history_str = ""
         for entry in pr_chat_history:
-            entry_str = f"'id': {entry['id']}\n'message': '{entry['message']}'\n'date_created': '{entry['date_created']}'\n"
+            entry_str = f"'Role': {entry['role']}\n'Message': '{entry['message']}'\n'Date_created': '{entry['date_created']}'\n"
             pr_chat_history_str += entry_str + "\n" 
         prompt_text += pr_chat_history_str
 
