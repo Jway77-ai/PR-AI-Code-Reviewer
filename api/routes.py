@@ -72,7 +72,6 @@ def handle_pr():
 
     # Access the pullrequest object and state
     pr_data = data.get('pullrequest')
-    status = data.get('state')  # Getting the 'state' from the main body
 
     pr_id = pr_data.get('id')
     if pr_id is None:
@@ -81,6 +80,7 @@ def handle_pr():
     title = pr_data.get('title', 'No Title')
     source_branch = pr_data['source']['branch']['name']
     target_branch = pr_data['destination']['branch']['name']
+    status = pr_data['state']
 
     logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
 
