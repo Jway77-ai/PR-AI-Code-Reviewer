@@ -71,8 +71,8 @@ def handle_pr():
 
     # Access the pullrequest object and state
     pr_data = data.get('pullrequest')
+    pr_id = str(pr_data.get('id'))
 
-    pr_id = pr_data.get('id')
     if pr_id is None:
         return jsonify({'status': 'error', 'message': 'PR ID not found'}), 400
     # If this pr_id already exists, update it instead
