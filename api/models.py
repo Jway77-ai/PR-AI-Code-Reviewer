@@ -23,7 +23,7 @@ class Conversation(db.Model):
     pr_id = db.Column(db.String, db.ForeignKey('PR.pr_id'), nullable=False)  # ForeignKey to PR
     message = db.Column(db.Text, nullable=False)
     date_created = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(ZoneInfo('Asia/Singapore')))
-
+    role = db.Column(db.String, nullable=False)
     # Relationship to the PR
     pr = db.relationship('PR', backref=db.backref('convo', lazy=True))
 

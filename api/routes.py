@@ -50,6 +50,7 @@ def sync_all_prs():
                 sourceBranchName=source_branch,
                 targetBranchName=target_branch,
                 content=processed_diff,
+                initialFeedback=feedback,
                 feedback=feedback,  # Latest feedback
                 date_created=datetime.now()
             )
@@ -65,10 +66,6 @@ def sync_all_prs():
 @main.route('/api/pr', methods=['POST'])
 def handle_pr():
     data = request.json
-
-    # Check if "state" exists at the top level and "pullrequest" exists in the request data
-    if 'state' not in data:
-        return jsonify({'status': 'error', 'message': 'State not found in the request data'}), 400
 
     if 'pullrequest' not in data:
         return jsonify({'status': 'error', 'message': 'Pull request data not found'}), 400
@@ -140,6 +137,7 @@ def summary():
                 'sourceBranchName': entry.sourceBranchName,
                 'targetBranchName': entry.targetBranchName,
                 'content': entry.content,
+                'initialFeedback': entry.initialFeedback,
                 'feedback': entry.feedback,
                 'date_created': entry.date_created.isoformat() if entry.date_created else None  # Handle None here
             })
@@ -152,6 +150,7 @@ def summary():
         logging.error(f"Error type: {type(e).__name__}")
         return jsonify({'error': 'Internal server error'}), 500
 
+# Latest reviewed PR - might not be needed anymore
 @main.route('/api/latest', methods=['GET'])
 def latest():
     try:
@@ -166,6 +165,7 @@ def latest():
             'sourceBranchName': latest_entry.sourceBranchName,
             'targetBranchName': latest_entry.targetBranchName,
             'content': latest_entry.content,
+            'initialFeedback': latest_entry.initialFeedback,
             'feedback': latest_entry.feedback,
             'date_created': latest_entry.date_created.isoformat()
         }}), 200
@@ -177,7 +177,7 @@ def latest():
 def healthchecker():
     return {"status": "success", "message": "Integrate Flask Framework with Next.js"}
 
-@main.route('/api/pr/<string:pr_id>', methods=['GET', 'POST'])
+@main.route('/api/pr/<string:pr_id>', methods=['GET'])
 def pr_entry(pr_id):
     if request.method == 'GET':
         try:
@@ -209,84 +209,8 @@ def pr_entry(pr_id):
         except Exception as e:
             logging.error(f"Error fetching PR {pr_id}: {e}")
             return jsonify({'error': 'Internal server error'}), 500
-
-    elif request.method == 'POST':  # Handle POST for querying the AI
-        try:
-            user_query = request.form.get('user_query')
-            if not user_query:
-                return jsonify({'error': 'No user query provided'}), 400
-
-            # Load the prompt from the file
-            prompt_file_path = os.path.join(os.path.dirname(__file__), 'furtherPrompt')
-            if not os.path.exists(prompt_file_path):
-                return jsonify({'error': 'Prompt file not found'}), 404
-            
-            with open(prompt_file_path, 'r') as file:
-                prompt_text = file.read().strip()
-
-            # Fetch the PR entry from the DB
-            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
-            if pr_entry is None:
-                return jsonify({'error': 'PR not found'}), 404
-
-            # Create the AI prompt with PR details
-            prompt_text += f"\nPull request contents: {pr_entry.content}\nYour previous feedback: {pr_entry.feedback}"
-            new_feedback = queryLLM(prompt_text, user_query)
-
-            # Update PR feedback in the database
-            pr_entry.feedback = new_feedback
-            db.session.commit()
-
-            return jsonify({'status': 'success', 'feedback': new_feedback}), 200
-        except FileNotFoundError:
-            logging.error(f"Prompt file not found: {prompt_file_path}")
-            return jsonify({'error': 'Prompt file not found'}), 404
-        except Exception as e:
-            logging.error(f"Error processing PR {pr_id}: {e}")
-            db.session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
-
-    if request.method == 'GET':
-        try:
-            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
-            if pr_entry is None:
-                return jsonify({'error': 'PR not found'}), 404
-            pr_data = {
-                'pr_id': pr_entry.pr_id,
-                'title': pr_entry.title,
-                'status':pr_entry.status,
-                'sourceBranchName': pr_entry.sourceBranchName,
-                'targetBranchName': pr_entry.targetBranchName,
-                'content': pr_entry.content,
-                'feedback': pr_entry.feedback,
-                'date_created': pr_entry.date_created.isoformat()
-            }
-            return jsonify(pr_data), 200
-        except Exception as e:
-            logging.error(f"Error fetching PR {pr_id}: {e}")
-            return jsonify({'error': 'Internal server error'}), 500
-    else: # POST new comment/qn to the AI
-        user_query = request.form.get('user_query')
-        prompt_file_path = os.path.join(os.path.dirname(__file__), 'furtherPrompt')
-        # Get prompt and context (PR content and previous feedback) before querying
-        with open(prompt_file_path, 'r') as file:
-            prompt_text = file.read().strip()
-        try:
-            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
-            if pr_entry is None:
-                return jsonify({'error': 'PR not found'}), 404
-            prompt_text += "\nPull request contents: " + pr_entry.content + "\n Your previous feedback: " + pr_entry.feedback
-            newFeedback = queryLLM(prompt_text, user_query)
-            # TODO: Need to update PR entry in the DB
-            return jsonify({'status': 'success', 'feedback': newFeedback}), 200
-        except FileNotFoundError:
-            logging.error(f"Prompt file not found: {prompt_file_path}")
-            return jsonify({'error': 'Prompt file not found'}), 404
-        except Exception as e:
-            logging.error(f"Error fetching PR {pr_id}: {e}")
-            return jsonify({'error': 'Internal server error'}), 500
         
-#Capture latest feedback
+# Capture latest feedback
 @main.route('/api/pr/<string:pr_id>/feedback', methods=['POST'])
 def update_feedback(pr_id):
     data = request.json
@@ -327,7 +251,8 @@ def add_conversation(pr_id):
         new_conversation = Conversation(
             pr_id=pr_id,
             message=data.get('message'),
-            date_created=datetime.now()  # Use current time
+            date_created=datetime.now(),  # Use current time
+            role = "User"
         )
         db.session.add(new_conversation)
         db.session.commit()
@@ -344,7 +269,7 @@ def get_conversations(pr_id):
         conversations = Conversation.query.filter_by(pr_id=pr_id).order_by(Conversation.date_created.asc()).all()
 
         response = [{
-            'id': conv.id,
+            'role': conv.role,
             'message': conv.message,
             'date_created': conv.date_created.isoformat()
         } for conv in conversations]
@@ -394,12 +319,14 @@ def groq_response(pr_id):
             return jsonify({'error': 'PR not found'}), 404
         prompt_text += "\nPull request contents: " + pr_entry.content + "\nYour initial feedback of the pull request: " + pr_entry.initialFeedback + "\nConversation history between you and the user about the code and feedback:\n"
 
+        # Retrieve all messages related to this pr_id
         pr_chat_history = [{
-            'id': conv.id,
+            'role': conv.role,
             'message': conv.message,
             'date_created': conv.date_created.isoformat()
-        } for conv in Conversation.query.filter_by(pr_id=pr_id).order_by(Conversation.date_created.asc()).all()]
-
+        } for conv in sorted(pr_entry.convo, key=lambda x: x.date_created)]
+        
+        # Convert chat history to string and append to prompt
         pr_chat_history_str = ""
         for entry in pr_chat_history:
             entry_str = f"'id': {entry['id']}\n'message': '{entry['message']}'\n'date_created': '{entry['date_created']}'\n"
@@ -407,7 +334,7 @@ def groq_response(pr_id):
         prompt_text += pr_chat_history_str
 
         payload = {
-            "model": "llama3-8b-8192",  # Confirm that this is the correct model
+            "model": "llama3-8b-8192",
             "messages": [
                 {"role": "system", "content": prompt_text},
                 {"role": "user", "content": user_message}
