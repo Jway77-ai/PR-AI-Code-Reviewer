@@ -10,6 +10,7 @@ class PR(db.Model):
     sourceBranchName = db.Column(db.String, nullable=False)
     targetBranchName = db.Column(db.String, nullable=False)
     content = db.Column(db.Text, nullable=True)
+    initialFeedback = db.Column(db.Text, nullable=True)
     feedback = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(ZoneInfo('Asia/Singapore')))
 

@@ -77,7 +77,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       await sendConversationToAPI(userMessage);
 
       // Send user message to Flask API to get the bot response
-      const response = await fetch("http://127.0.0.1:8000/api/groq-response", {
+      const response = await fetch(`http://127.0.0.1:8000/api/pr/${prId}/groq-response`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

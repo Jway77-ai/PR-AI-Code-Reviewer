@@ -106,6 +106,7 @@ def handle_pr():
             sourceBranchName=source_branch,
             targetBranchName=target_branch,
             content=processed_diff,
+            initialFeedback=feedback,
             feedback=feedback,
             date_created=datetime.now()  # Adjusted to use current date-time
         )
@@ -199,6 +200,7 @@ def pr_entry(pr_id):
                 'sourceBranchName': pr_entry.sourceBranchName,
                 'targetBranchName': pr_entry.targetBranchName,
                 'content': pr_entry.content,
+                'initialFeedback': pr_entry.initialFeedback,
                 'feedback': pr_entry.feedback,
                 'conversation_history': conversation_history,
                 'date_created': pr_entry.date_created.isoformat()
@@ -354,8 +356,8 @@ def get_conversations(pr_id):
 
 
 # Groq API interaction route
-@main.route('/api/groq-response', methods=['POST'])
-def groq_response():
+@main.route('/api/pr/<string:pr_id>/groq-response', methods=['POST'])
+def groq_response(pr_id):
     try:
         # Extract JSON data from the request
         data = request.json
@@ -378,10 +380,36 @@ def groq_response():
             'Authorization': f'Bearer {groq_api_key}',
             'Content-Type': 'application/json'
         }
+
+        # Load the prompt from the file
+        prompt_file_path = os.path.join(os.path.dirname(__file__), 'groqPrompt')
+        if not os.path.exists(prompt_file_path):
+            return jsonify({'error': 'Prompt file not found'}), 404
+        
+        with open(prompt_file_path, 'r') as file:
+            prompt_text = file.read().strip()
+
+        pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+        if pr_entry is None:
+            return jsonify({'error': 'PR not found'}), 404
+        prompt_text += "\nPull request contents: " + pr_entry.content + "\nYour initial feedback of the pull request: " + pr_entry.initialFeedback + "\nConversation history between you and the user about the code and feedback:\n"
+
+        pr_chat_history = [{
+            'id': conv.id,
+            'message': conv.message,
+            'date_created': conv.date_created.isoformat()
+        } for conv in Conversation.query.filter_by(pr_id=pr_id).order_by(Conversation.date_created.asc()).all()]
+
+        pr_chat_history_str = ""
+        for entry in pr_chat_history:
+            entry_str = f"'id': {entry['id']}\n'message': '{entry['message']}'\n'date_created': '{entry['date_created']}'\n"
+            pr_chat_history_str += entry_str + "\n" 
+        prompt_text += pr_chat_history_str
+
         payload = {
             "model": "llama3-8b-8192",  # Confirm that this is the correct model
             "messages": [
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": prompt_text},
                 {"role": "user", "content": user_message}
             ]
         }
