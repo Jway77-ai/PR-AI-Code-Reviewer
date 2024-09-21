@@ -76,48 +76,54 @@ def handle_pr():
     pr_id = pr_data.get('id')
     if pr_id is None:
         return jsonify({'status': 'error', 'message': 'PR ID not found'}), 400
-
-    title = pr_data.get('title', 'No Title')
-    source_branch = pr_data['source']['branch']['name']
-    target_branch = pr_data['destination']['branch']['name']
-    status = pr_data['state']
-
-    logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
-
-    try:
-        # Fetch the PR diff from Bitbucket
-        files_diff = get_files_diff(pr_id)
-        processed_diff = process_files_diff(files_diff)
-
-        # Example LLM analysis (optional)
-        prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
-        with open(prompt_file_path, 'r') as file:
-            prompt_text = file.read().strip()
-        feedback = analyze_code_with_llm(prompt_text, processed_diff)
-
-        # Insert the fetched PR data into the PostgreSQL database
-        new_pr_diff = PR(
-            pr_id=pr_id,
-            title=title,
-            status=status,  # Now fetching status from 'state' field in the main body
-            sourceBranchName=source_branch,
-            targetBranchName=target_branch,
-            content=processed_diff,
-            initialFeedback=feedback,
-            feedback=feedback,
-            date_created=datetime.now()  # Adjusted to use current date-time
-        )
-        db.session.add(new_pr_diff)
+    # If this pr_id already exists, update it instead
+    pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+    if pr_entry:
+        pr_entry.title = pr_data.get('title', 'No Title')
+        pr_entry.status = pr_data['state']
         db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Pull request status updated successfully'}), 200
+    else:
+        title = pr_data.get('title', 'No Title')
+        source_branch = pr_data['source']['branch']['name']
+        target_branch = pr_data['destination']['branch']['name']
+        status = pr_data['state']
 
-        return jsonify({'status': 'success', 'message': 'Pull request processed and saved successfully'}), 200
-    except FileNotFoundError:
-        logging.error(f"Prompt file not found: {prompt_file_path}")
-        return jsonify({'error': 'Prompt file not found'}), 404
-    except Exception as e:
-        logging.error(f"Error processing pull request: {e}")
-        db.session.rollback()
-        return jsonify({'error': 'Internal server error'}), 500
+        logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
+
+        try:
+            # Fetch the PR diff from Bitbucket
+            files_diff = get_files_diff(pr_id)
+            processed_diff = process_files_diff(files_diff)
+
+            # Example LLM analysis (optional)
+            prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
+            with open(prompt_file_path, 'r') as file:
+                prompt_text = file.read().strip()
+            feedback = analyze_code_with_llm(prompt_text, processed_diff)
+
+            # Insert the fetched PR data into the PostgreSQL database
+            new_pr_diff = PR(
+                pr_id=pr_id,
+                title=title,
+                status=status,  # Now fetching status from 'state' field in the main body
+                sourceBranchName=source_branch,
+                targetBranchName=target_branch,
+                content=processed_diff,
+                initialFeedback=feedback,
+                feedback=feedback,
+                date_created=datetime.now()  # Adjusted to use current date-time
+            )
+            db.session.add(new_pr_diff)
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': 'Pull request processed and saved successfully'}), 200
+        except FileNotFoundError:
+            logging.error(f"Prompt file not found: {prompt_file_path}")
+            return jsonify({'error': 'Prompt file not found'}), 404
+        except Exception as e:
+            logging.error(f"Error processing pull request: {e}")
+            db.session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
 
 @main.route('/api/summary', methods=['GET'])
 def summary():
