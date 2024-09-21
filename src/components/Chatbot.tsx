@@ -33,7 +33,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
     setError(null);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/pr/${prId}/conversations`
+        `https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/conversations`
       );
       const data = await response.json();
 
@@ -77,7 +77,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       await sendConversationToAPI(userMessage, "User");
 
       // Send user message to Flask API to get the bot response
-      const response = await fetch(`http://127.0.0.1:8000/api/pr/${prId}/groq-response`, {
+      const response = await fetch(`https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/groq-response`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -118,7 +118,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
   const sendConversationToAPI = async (message: string, role: string) => {
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/pr/${prId}/conversation`,
+        `https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/conversation`,
         {
           method: "POST",
           headers: {
