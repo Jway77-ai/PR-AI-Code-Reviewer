@@ -51,8 +51,7 @@ def sync_all_prs():
                 targetBranchName=target_branch,
                 content=processed_diff,
                 initialFeedback=feedback,
-                feedback=feedback,  # Latest feedback
-                date_created=datetime.now()
+                feedback=feedback  # Latest feedback
             )
             db.session.add(new_pr_diff)
             db.session.commit()
@@ -111,8 +110,7 @@ def handle_pr():
                 targetBranchName=target_branch,
                 content=processed_diff,
                 initialFeedback=feedback,
-                feedback=feedback,
-                date_created=datetime.now()  # Adjusted to use current date-time
+                feedback=feedback
             )
             db.session.add(new_pr_diff)
             db.session.commit()
