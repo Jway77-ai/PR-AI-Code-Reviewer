@@ -1,5 +1,3 @@
-// components/Chatbot.tsx
-
 "use client";
 import { useEffect, useState, useCallback } from "react";
 
@@ -77,13 +75,16 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       await sendConversationToAPI(userMessage, "User");
 
       // Send user message to Flask API to get the bot response
-      const response = await fetch(`https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/groq-response`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: userMessage, prId: prId }),
-      });
+      const response = await fetch(
+        `https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/groq-response`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: userMessage, prId: prId }),
+        }
+      );
 
       const data = await response.json();
 
