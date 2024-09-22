@@ -8,15 +8,17 @@ from datetime import datetime
 from dotenv import load_dotenv
 import requests
 from requests.auth import HTTPBasicAuth
+from pytz import timezone, utc
 
 # Load environment variables from the .env file
 load_dotenv()
 
 def get_all_prs_from_repo():
     """
-    Fetch all pull requests from Bitbucket repository.
+    Fetch all pull requests from Bitbucket repository, including all states and handling pagination.
     """
     try:
+        # Get Bitbucket credentials from environment variables
         BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")
         BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")
         BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
@@ -24,29 +26,34 @@ def get_all_prs_from_repo():
 
         # Obtain access token
         token_url = "https://bitbucket.org/site/oauth2/access_token"
-        response = requests.post(
+        token_response = requests.post(
             token_url,
             data={"grant_type": "client_credentials"},
             auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
         )
-        if response.status_code == 200:
-            access_token = response.json().get("access_token")
+        token_response.raise_for_status()
+        access_token = token_response.json()["access_token"]
 
-            # URL to get all pull requests
-            url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests"
-            headers = {'Authorization': f'Bearer {access_token}'}
+        # Set up for PR fetching
+        headers = {'Authorization': f'Bearer {access_token}'}
+        url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests"
+        params = {'state': 'ALL', 'pagelen': 50}
+        
+        all_prs = []
 
-            # Make the request to fetch all PRs
-            reply = requests.get(url, headers=headers)
-            if reply.status_code == 200:
-                return reply.json()
-            else:
-                logging.error(f"Failed to fetch PRs: {reply.status_code}, {reply.text}")
-                raise Exception(f"Failed to fetch PRs: {reply.status_code}")
-        else:
-            logging.error(f"Failed to get access token: {response.status_code}, {response.text}")
-            raise Exception("Failed to get access token")
-    except Exception as e:
+        # Fetch PRs with pagination
+        while url:
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            all_prs.extend(data['values'])
+            url = data.get('next')
+            params = {}  # Clear params for subsequent requests
+
+        logging.info(f"Total PRs fetched: {len(all_prs)}")
+        return {'values': all_prs}
+
+    except requests.RequestException as e:
         logging.error(f"Error fetching PRs from Bitbucket: {e}")
         raise
 
@@ -246,3 +253,25 @@ def insert_dummy_pr():
     except Exception as e:
         db.session.rollback()
         print(f"Error inserting dummy PR: {e}")
+
+def handle_date(date_input, to_sgt=False, as_string=False):
+    """
+    Handle date conversion from string to datetime and optionally to SGT.
+    """
+    # If input is a string, parse it to datetime
+    if isinstance(date_input, str):
+        dt = datetime.fromisoformat(date_input.rstrip('Z')).replace(tzinfo=utc)
+    elif isinstance(date_input, datetime):
+        dt = date_input.replace(tzinfo=utc) if date_input.tzinfo is None else date_input
+    else:
+        raise ValueError("Input must be a string or datetime object")
+
+    # Convert to SGT if requested
+    if to_sgt:
+        sgt = timezone('Asia/Singapore')
+        dt = dt.astimezone(sgt)
+
+    # Return as string if requested, else return datetime object
+    if as_string:
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
+    return dt

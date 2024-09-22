@@ -9,7 +9,8 @@ interface PullRequest {
   status: string;
   sourceBranchName: string;
   targetBranchName: string;
-  date_created: string;
+  created_date: string;
+  last_modified: string;
   content: string;
   feedback: string;
 }
@@ -19,18 +20,21 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Function to fetch data from Flask API through Next.js API route
   const fetchData = async () => {
-    setLoading(true); // Set loading state to true when fetching data
+    setLoading(true);
     try {
-      const response = await fetch("/api/summary"); // Fetch data from the Next.js API route
+      const response = await fetch("/api/summary");
       if (!response.ok) {
         throw new Error("Error fetching data from backend.");
       }
       const data = await response.json();
       if (data.entries && Array.isArray(data.entries)) {
         console.log(data);
-        const fetchedData = data.entries;
+        const fetchedData = data.entries.sort(
+          (a: PullRequest, b: PullRequest) =>
+            new Date(b.last_modified).getTime() -
+            new Date(a.last_modified).getTime()
+        );
         setPrData(fetchedData);
       } else {
         setError("Invalid data format received from the API.");
@@ -39,17 +43,41 @@ const Dashboard: React.FC = () => {
       setError("Error fetching data from backend.");
       console.error(err);
     } finally {
-      setLoading(false); // Set loading state back to false after fetching data
+      setLoading(false);
     }
   };
 
-  // Automatically fetch data on component load
   useEffect(() => {
     fetchData();
   }, []);
 
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    };
+    return new Date(dateString).toLocaleString("en-US", options);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "open":
+        return "bg-green-500";
+      case "merged":
+        return "bg-purple-500";
+      case "declined":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
   return (
-    <div className="p-6 max-w-5xl mx-auto flex-grow">
+    <div className="p-6 max-w-7xl mx-auto flex-grow">
       <div className="flex flex-col items-center">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">
           Code Review Dashboard
@@ -101,7 +129,13 @@ const Dashboard: React.FC = () => {
                       PR ID
                     </th>
                     <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date Added
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created Date
+                    </th>
+                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Last Modified
                     </th>
                     <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Action
@@ -117,14 +151,30 @@ const Dashboard: React.FC = () => {
                             href={`/pull-requests/${pr.pr_id}`}
                             className="hover:underline"
                           >
-                            <div className="text-sm font-medium text-blue-600">{`${pr.title} `}</div>
+                            <div className="text-sm font-medium text-blue-600">
+                              {pr.title}
+                            </div>
                           </Link>
                         </td>
                         <td className="px-6 py-4 whitespace-normal">
-                          <div className="text-sm text-gray-500">{`#${pr.pr_id}`}</div>
+                          <div className="text-sm text-gray-500">
+                            #{pr.pr_id}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${getStatusColor(
+                              pr.status
+                            )}`}
+                          >
+                            {pr.status}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(pr.date_created).toLocaleString()}
+                          {formatDate(pr.created_date)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(pr.last_modified)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <Link
@@ -140,7 +190,7 @@ const Dashboard: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={3}
+                        colSpan={6}
                         className="px-6 py-4 text-center text-sm text-gray-500"
                       >
                         No pull requests available.
