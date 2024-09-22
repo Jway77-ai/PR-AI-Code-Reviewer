@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
 interface PullRequest {
@@ -50,6 +51,9 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
 
     fetchData();
   }, [prId]);
+
+  // Dynamically construct the PR URL
+  const prUrl = `https://bitbucket.org/debugging-dragons/webhook-codedoc/pull-requests/${prId}`;
 
   return (
     <div className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-lg">
@@ -105,6 +109,19 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
               </h3>
               <p className="text-gray-600">{prDetails.status}</p>
             </div>
+          </div>
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              PR URL:
+            </h3>
+            <Link
+              href={prUrl}
+              className="text-blue-600 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {prUrl}
+            </Link>
           </div>
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
