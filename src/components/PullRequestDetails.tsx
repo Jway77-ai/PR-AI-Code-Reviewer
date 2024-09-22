@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface PullRequest {
   id: number;
@@ -21,6 +22,7 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
   const [prDetails, setPrDetails] = useState<PullRequest | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -35,13 +37,12 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
         const data = await response.json();
         setPrDetails(data);
       } catch (err) {
-        // Use a type guard to narrow down the type of `err`
         if (err instanceof Error) {
           setError(`Error fetching data from backend: ${err.message}`);
-          console.error("Error details:", err.message); // Log the error message
+          console.error("Error details:", err.message);
         } else {
           setError("An unknown error occurred.");
-          console.error("Error details:", err); // Log the full error object if it is not an instance of Error
+          console.error("Error details:", err);
         }
       } finally {
         setLoading(false);
@@ -50,6 +51,9 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
 
     fetchData();
   }, [prId]);
+
+  // Dynamically construct the PR URL
+  const prUrl = `https://bitbucket.org/debugging-dragons/webhook-codedoc/pull-requests/${prId}`;
 
   return (
     <div className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-lg">
@@ -105,6 +109,19 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
               </h3>
               <p className="text-gray-600">{prDetails.status}</p>
             </div>
+          </div>
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              PR URL:
+            </h3>
+            <Link
+              href={prUrl}
+              className="text-blue-600 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {prUrl}
+            </Link>
           </div>
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">

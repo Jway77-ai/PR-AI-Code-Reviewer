@@ -8,9 +8,16 @@ from datetime import datetime
 from dotenv import load_dotenv
 import requests
 from requests.auth import HTTPBasicAuth
+from datetime import datetime, timedelta
 
 # Load environment variables from the .env file
 load_dotenv()
+
+def convert_utc_to_gmt8(dt):
+    """Convert a UTC datetime object to GMT +8."""
+    if dt:
+        return dt + timedelta(hours=8)
+    return None
 
 def get_all_prs_from_repo():
     """

@@ -31,6 +31,12 @@ const Dashboard: React.FC = () => {
       if (data.entries && Array.isArray(data.entries)) {
         console.log(data);
         const fetchedData = data.entries;
+        // Sort the data by date_created in descending order
+        fetchedData.sort((a: PullRequest, b: PullRequest) => {
+          const dateA = new Date(a.date_created).getTime();
+          const dateB = new Date(b.date_created).getTime();
+          return dateB - dateA; // Sort by date_created in descending order
+        });
         setPrData(fetchedData);
       } else {
         setError("Invalid data format received from the API.");
@@ -101,7 +107,7 @@ const Dashboard: React.FC = () => {
                       PR ID
                     </th>
                     <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date Added
+                      Last Modified Date
                     </th>
                     <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Action
