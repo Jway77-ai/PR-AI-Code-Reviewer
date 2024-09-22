@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from groq import Groq
 from .models import PR, Conversation
-from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM
+from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM, convert_utc_to_gmt8
 #from .extensions import db
 from .index import db
 import os
@@ -29,6 +29,18 @@ def sync_all_prs():
             source_branch = pr_data['source']['branch']['name']
             target_branch = pr_data['destination']['branch']['name']
 
+             # Get the latest of 'created_on' and 'updated_on'
+            created_on = datetime.fromisoformat(pr_data['created_on'].replace('Z', '+00:00'))
+            updated_on = datetime.fromisoformat(pr_data['updated_on'].replace('Z', '+00:00'))
+
+            # Use the latest date between created_on and updated_on
+            latest_date = max(created_on, updated_on)
+
+            # Convert to GMT +8 using the helper function
+            latest_date_gmt8 = convert_utc_to_gmt8(latest_date)
+
+            # Process PR diff and feedback (example processing)
+
             # Check if the PR already exists in the database
             existing_pr = PR.query.filter_by(pr_id=pr_id).first()
             if existing_pr:
@@ -51,7 +63,8 @@ def sync_all_prs():
                 targetBranchName=target_branch,
                 content=processed_diff,
                 initialFeedback=feedback,
-                feedback=feedback  # Latest feedback
+                feedback=feedback, # Latest feedback
+                date_created=latest_date_gmt8
             )
             db.session.add(new_pr_diff)
             db.session.commit()
@@ -86,6 +99,16 @@ def handle_pr():
         title = pr_data.get('title', 'No Title')
         source_branch = pr_data['source']['branch']['name']
         target_branch = pr_data['destination']['branch']['name']
+        # Handle date fields
+        created_on = datetime.fromisoformat(pr_data['created_on'].replace('Z', '+00:00'))
+        updated_on = datetime.fromisoformat(pr_data['updated_on'].replace('Z', '+00:00'))
+
+        # Use the latest date between created_on and updated_on
+        latest_date = max(created_on, updated_on)
+
+        # Convert the latest date to GMT +8 using the helper function
+        latest_date_gmt8 = convert_utc_to_gmt8(latest_date)
+
         status = pr_data['state']
 
         logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
@@ -110,7 +133,8 @@ def handle_pr():
                 targetBranchName=target_branch,
                 content=processed_diff,
                 initialFeedback=feedback,
-                feedback=feedback
+                feedback=feedback,
+                date_created=latest_date_gmt8
             )
             db.session.add(new_pr_diff)
             db.session.commit()
@@ -134,6 +158,10 @@ def summary():
         # Build the response while handling None values for date_created
         entries = []
         for entry in latest_entries:
+            # Retrieve created_on and updated_on fields from the entry
+            created_on = entry.date_created            
+            # Convert to GMT +8 timezone using the helper function
+            date_gmt8 = convert_utc_to_gmt8(created_on) if created_on else None
             entries.append({
                 'title': entry.title,
                 'status':entry.status,
@@ -143,7 +171,7 @@ def summary():
                 'content': entry.content,
                 'initialFeedback': entry.initialFeedback,
                 'feedback': entry.feedback,
-                'date_created': entry.date_created.isoformat() if entry.date_created else None  # Handle None here
+                'date_created': date_gmt8.isoformat() if date_gmt8 else None  # Handle None here
             })
         # Log the entries for debugging purposes
         logging.info(f"Entries: {entries}")
@@ -162,6 +190,7 @@ def latest():
         logging.error(latest_entry)
         if not latest_entry:
             return jsonify({'message': 'No entries found in the database.'}), 200
+        date_gmt8 = convert_utc_to_gmt8(latest_entry.date_created) if latest_entry.date_created else None
         return jsonify({'entry': {
             'title': latest_entry.title,
             'status':latest_entry.status,
@@ -171,7 +200,7 @@ def latest():
             'content': latest_entry.content,
             'initialFeedback': latest_entry.initialFeedback,
             'feedback': latest_entry.feedback,
-            'date_created': latest_entry.date_created.isoformat()
+            'date_created': date_gmt8.isoformat() if date_gmt8 else None
         }}), 200
     except Exception as e:
         logging.error(f"Error fetching summary: {e}")
@@ -194,8 +223,9 @@ def pr_entry(pr_id):
             conversation_history = [{
                 'id': conv.id,
                 'message': conv.message,
-                'date_created': conv.date_created.isoformat()
+                'date_created': convert_utc_to_gmt8(conv.date_created).isoformat() if conv.date_created else None 
             } for conv in conversations]
+            date_gmt8 = convert_utc_to_gmt8(pr_entry.date_created) if pr_entry.date_created else None
 
             pr_data = {
                 'pr_id': pr_entry.pr_id,
@@ -207,7 +237,7 @@ def pr_entry(pr_id):
                 'initialFeedback': pr_entry.initialFeedback,
                 'feedback': pr_entry.feedback,
                 'conversation_history': conversation_history,
-                'date_created': pr_entry.date_created.isoformat()
+                'date_created': date_gmt8.isoformat() if date_gmt8 else None
             }
             return jsonify(pr_data), 200
         except Exception as e:
@@ -255,7 +285,7 @@ def add_conversation(pr_id):
         new_conversation = Conversation(
             pr_id=pr_id,
             message=data.get('message'),
-            date_created=datetime.now(),  # Use current time
+            date_created=convert_utc_to_gmt8(datetime.now()),
             role = data.get('role', 'User')
         )
         db.session.add(new_conversation)
