@@ -74,10 +74,14 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
 
     try {
       // Save user message
-      await sendConversationToAPI(userMessage, "User");
+      await sendConversationToAPI(userMessage);
 
       // Send user message to Flask API to get the bot response
+<<<<<<< HEAD
       const response = await fetch(`https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/groq-response`, {
+=======
+      const response = await fetch("http://127.0.0.1:8000/api/groq-response", {
+>>>>>>> parent of 5354d82 (Update groq API route to include pre-existing context)
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -98,7 +102,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       setMessages(updatedMessages);
 
       // Save bot response
-      await sendConversationToAPI(botResponse, "System");
+      await sendConversationToAPI(botResponse);
     } catch (error) {
       console.error("Error fetching bot response:", error);
       setError(
@@ -115,7 +119,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
     }
   };
 
-  const sendConversationToAPI = async (message: string, role: string) => {
+  const sendConversationToAPI = async (message: string) => {
     try {
       const response = await fetch(
         `https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/conversation`,
@@ -124,7 +128,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message, role }),
+          body: JSON.stringify({ message }),
         }
       );
 

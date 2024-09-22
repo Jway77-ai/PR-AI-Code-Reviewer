@@ -39,10 +39,69 @@ def sync_all_prs():
             # Use the latest date between created_on and updated_on
             latest_date = max(created_on, updated_on)
 
+<<<<<<< HEAD
             # Convert to GMT +8 using the helper function
             latest_date_gmt8 = convert_utc_to_gmt8(latest_date)
+=======
+            # Insert new PR data with latest feedback
+            new_pr_diff = PR(
+                pr_id=pr_id,
+                title=title,
+                status=status,
+                sourceBranchName=source_branch,
+                targetBranchName=target_branch,
+                content=processed_diff,
+                feedback=feedback,  # Latest feedback
+                date_created=datetime.now()
+            )
+            db.session.add(new_pr_diff)
+            db.session.commit()
+>>>>>>> parent of 997dfac (Clean routes.py and add new column for role in Conversation table)
 
+<<<<<<< HEAD
             # Process PR diff and feedback (example processing)
+=======
+        return jsonify({'status': 'success', 'message': 'All PRs synced and saved successfully'}), 200
+    except Exception as e:
+        logging.error(f"Error syncing PRs: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
+
+@main.route('/api/pr', methods=['POST'])
+def handle_pr():
+    data = request.json
+
+    # Check if "state" exists at the top level and "pullrequest" exists in the request data
+    if 'state' not in data:
+        return jsonify({'status': 'error', 'message': 'State not found in the request data'}), 400
+
+    if 'pullrequest' not in data:
+        return jsonify({'status': 'error', 'message': 'Pull request data not found'}), 400
+
+    # Access the pullrequest object and state
+    pr_data = data.get('pullrequest')
+
+    pr_id = pr_data.get('id')
+    if pr_id is None:
+        return jsonify({'status': 'error', 'message': 'PR ID not found'}), 400
+    # If this pr_id already exists, update it instead
+    pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+    if pr_entry:
+        pr_entry.title = pr_data.get('title', 'No Title')
+        pr_entry.status = pr_data['state']
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Pull request status updated successfully'}), 200
+    else:
+        title = pr_data.get('title', 'No Title')
+        source_branch = pr_data['source']['branch']['name']
+        target_branch = pr_data['destination']['branch']['name']
+        status = pr_data['state']
+
+        logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
+
+        try:
+            # Fetch the PR diff from Bitbucket
+>>>>>>> parent of 2d5ba4e (Backend: Cast pr_id to string in /api/pr)
             files_diff = get_files_diff(pr_id)
             processed_diff = process_files_diff(files_diff)
 
@@ -280,6 +339,50 @@ def pr_entry(pr_id):
             db.session.rollback()
             return jsonify({'error': 'Internal server error'}), 500
 
+<<<<<<< HEAD
+=======
+    if request.method == 'GET':
+        try:
+            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+            if pr_entry is None:
+                return jsonify({'error': 'PR not found'}), 404
+            pr_data = {
+                'pr_id': pr_entry.pr_id,
+                'title': pr_entry.title,
+                'status':pr_entry.status,
+                'sourceBranchName': pr_entry.sourceBranchName,
+                'targetBranchName': pr_entry.targetBranchName,
+                'content': pr_entry.content,
+                'feedback': pr_entry.feedback,
+                'date_created': pr_entry.date_created.isoformat()
+            }
+            return jsonify(pr_data), 200
+        except Exception as e:
+            logging.error(f"Error fetching PR {pr_id}: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
+    else: # POST new comment/qn to the AI
+        user_query = request.form.get('user_query')
+        prompt_file_path = os.path.join(os.path.dirname(__file__), 'furtherPrompt')
+        # Get prompt and context (PR content and previous feedback) before querying
+        with open(prompt_file_path, 'r') as file:
+            prompt_text = file.read().strip()
+        try:
+            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+            if pr_entry is None:
+                return jsonify({'error': 'PR not found'}), 404
+            prompt_text += "\nPull request contents: " + pr_entry.content + "\n Your previous feedback: " + pr_entry.feedback
+            newFeedback = queryLLM(prompt_text, user_query)
+            # TODO: Need to update PR entry in the DB
+            return jsonify({'status': 'success', 'feedback': newFeedback}), 200
+        except FileNotFoundError:
+            logging.error(f"Prompt file not found: {prompt_file_path}")
+            return jsonify({'error': 'Prompt file not found'}), 404
+        except Exception as e:
+            logging.error(f"Error fetching PR {pr_id}: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
+        
+#Capture latest feedback
+>>>>>>> parent of 997dfac (Clean routes.py and add new column for role in Conversation table)
 @main.route('/api/pr/<string:pr_id>/feedback', methods=['POST'])
 def update_feedback(pr_id):
     data = request.json
@@ -320,7 +423,16 @@ def add_conversation(pr_id):
         new_conversation = Conversation(
             pr_id=pr_id,
             message=data.get('message'),
+<<<<<<< HEAD
+<<<<<<< HEAD
             date_created=convert_utc_to_gmt8(datetime.utcnow())  # Use utility function to convert to GMT +8
+=======
+            date_created=datetime.now()  # Use current time
+>>>>>>> parent of 997dfac (Clean routes.py and add new column for role in Conversation table)
+=======
+            date_created=datetime.now(),  # Use current time
+            role = "User"
+>>>>>>> parent of 346d1ac (Update implementation to save the roles in the chatbot conversation)
         )
         db.session.add(new_conversation)
         db.session.commit()
@@ -374,8 +486,39 @@ def groq_response():
             'Authorization': f'Bearer {groq_api_key}',
             'Content-Type': 'application/json'
         }
+<<<<<<< HEAD
         payload = {
             "model": groq_model_name,
+=======
+
+        # Load the prompt from the file
+        prompt_file_path = os.path.join(os.path.dirname(__file__), 'groqPrompt')
+        if not os.path.exists(prompt_file_path):
+            return jsonify({'error': 'Prompt file not found'}), 404
+        
+        with open(prompt_file_path, 'r') as file:
+            prompt_text = file.read().strip()
+
+        pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+        if pr_entry is None:
+            return jsonify({'error': 'PR not found'}), 404
+        prompt_text += "\nPull request contents: " + pr_entry.content + "\nYour initial feedback of the pull request: " + pr_entry.initialFeedback + "\nConversation history between you and the user about the code and feedback:\n"
+
+        pr_chat_history = [{
+            'id': conv.id,
+            'message': conv.message,
+            'date_created': conv.date_created.isoformat()
+        } for conv in Conversation.query.filter_by(pr_id=pr_id).order_by(Conversation.date_created.asc()).all()]
+
+        pr_chat_history_str = ""
+        for entry in pr_chat_history:
+            entry_str = f"'id': {entry['id']}\n'message': '{entry['message']}'\n'date_created': '{entry['date_created']}'\n"
+            pr_chat_history_str += entry_str + "\n" 
+        prompt_text += pr_chat_history_str
+
+        payload = {
+            "model": "llama3-8b-8192",  # Confirm that this is the correct model
+>>>>>>> parent of 997dfac (Clean routes.py and add new column for role in Conversation table)
             "messages": [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": user_message}

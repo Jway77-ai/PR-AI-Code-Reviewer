@@ -10,7 +10,6 @@ class PR(db.Model):
     sourceBranchName = db.Column(db.String, nullable=False)
     targetBranchName = db.Column(db.String, nullable=False)
     content = db.Column(db.Text, nullable=True)
-    initialFeedback = db.Column(db.Text, nullable=True)
     feedback = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(ZoneInfo('Asia/Singapore')))
 
@@ -23,7 +22,7 @@ class Conversation(db.Model):
     pr_id = db.Column(db.String, db.ForeignKey('PR.pr_id'), nullable=False)  # ForeignKey to PR
     message = db.Column(db.Text, nullable=False)
     date_created = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(ZoneInfo('Asia/Singapore')))
-    role = db.Column(db.String, nullable=False)
+
     # Relationship to the PR
     pr = db.relationship('PR', backref=db.backref('convo', lazy=True))
 
