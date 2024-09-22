@@ -2,6 +2,10 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from .index import db
 
+# Helper function to convert datetime to GMT+8
+def current_time_gmt8():
+    return datetime.now(ZoneInfo('Asia/Singapore'))
+
 class PR(db.Model):
     __tablename__ = 'PR'
     pr_id = db.Column(db.String, primary_key=True, unique=True, nullable=False)  # Ensure pr_id is unique and a primary key
@@ -10,8 +14,9 @@ class PR(db.Model):
     sourceBranchName = db.Column(db.String, nullable=False)
     targetBranchName = db.Column(db.String, nullable=False)
     content = db.Column(db.Text, nullable=True)
+    initialFeedback = db.Column(db.Text, nullable=True)
     feedback = db.Column(db.Text, nullable=True)
-    date_created = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(ZoneInfo('Asia/Singapore')))
+    date_created = db.Column(db.DateTime, nullable=False, default=current_time_gmt8)  # Use helper function for GMT+8
 
     def __repr__(self):
         return f'<PR {self.pr_id}>'
@@ -21,8 +26,8 @@ class Conversation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     pr_id = db.Column(db.String, db.ForeignKey('PR.pr_id'), nullable=False)  # ForeignKey to PR
     message = db.Column(db.Text, nullable=False)
-    date_created = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(ZoneInfo('Asia/Singapore')))
-
+    date_created = db.Column(db.DateTime, nullable=False, default=current_time_gmt8)  # Use helper function for GMT+8
+    role = db.Column(db.String, nullable=False)
     # Relationship to the PR
     pr = db.relationship('PR', backref=db.backref('convo', lazy=True))
 
