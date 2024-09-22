@@ -77,17 +77,16 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       await sendConversationToAPI(userMessage);
 
       // Send user message to Flask API to get the bot response
-<<<<<<< HEAD
-      const response = await fetch(`https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/groq-response`, {
-=======
-      const response = await fetch("http://127.0.0.1:8000/api/groq-response", {
->>>>>>> parent of 5354d82 (Update groq API route to include pre-existing context)
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: userMessage, prId: prId }),
-      });
+      const response = await fetch(
+        `https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/groq-response`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: userMessage, prId: prId }),
+        }
+      );
 
       const data = await response.json();
 
