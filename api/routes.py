@@ -41,10 +41,10 @@ def sync_all_prs():
 
             # Process PR diff and feedback (example processing)
 
-            # Check if the PR already exists in the database
-            existing_pr = PR.query.filter_by(pr_id=pr_id).first()
-            if existing_pr:
-                continue  # Skip if PR already exists
+            # # Check if the PR already exists in the database
+            # existing_pr = PR.query.filter_by(pr_id=pr_id).first()
+            # if existing_pr:
+            #     continue  # Skip if PR already exists
 
             # Process PR diff and feedback
             files_diff = get_files_diff(pr_id)
@@ -302,6 +302,10 @@ def get_conversations(pr_id):
     try:
         conversations = Conversation.query.filter_by(pr_id=pr_id).order_by(Conversation.date_created.asc()).all()
 
+         # Ensure that conversations exist for the given PR ID
+        if not conversations:
+            return jsonify({'error': 'No conversations found for this PR.'}), 404
+
         response = [{
             'role': conv.role,
             'message': conv.message,
@@ -312,7 +316,6 @@ def get_conversations(pr_id):
     except Exception as e:
         logging.error(f"Error fetching conversations: {e}")
         return jsonify({'error': 'Internal server error'}), 500
-
 
 # Groq API interaction route
 @main.route('/api/pr/<string:pr_id>/groq-response', methods=['POST'])

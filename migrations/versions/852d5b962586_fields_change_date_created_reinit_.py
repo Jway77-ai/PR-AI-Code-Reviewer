@@ -1,8 +1,8 @@
-"""Initial migration after reset
+"""Fields change date_created, reinit migration
 
-Revision ID: ced89b8d59c1
+Revision ID: 852d5b962586
 Revises: 
-Create Date: 2024-09-21 00:02:31.016097
+Create Date: 2024-09-22 22:38:09.173096
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ced89b8d59c1'
+revision = '852d5b962586'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,6 +25,7 @@ def upgrade():
     sa.Column('sourceBranchName', sa.String(), nullable=False),
     sa.Column('targetBranchName', sa.String(), nullable=False),
     sa.Column('content', sa.Text(), nullable=True),
+    sa.Column('initialFeedback', sa.Text(), nullable=True),
     sa.Column('feedback', sa.Text(), nullable=True),
     sa.Column('date_created', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('pr_id'),
@@ -35,6 +36,7 @@ def upgrade():
     sa.Column('pr_id', sa.String(), nullable=False),
     sa.Column('message', sa.Text(), nullable=False),
     sa.Column('date_created', sa.DateTime(), nullable=False),
+    sa.Column('role', sa.String(), nullable=False),
     sa.ForeignKeyConstraint(['pr_id'], ['PR.pr_id'], ),
     sa.PrimaryKeyConstraint('id')
     )

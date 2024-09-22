@@ -14,7 +14,7 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
     # Attempt to construct the PostgreSQL DATABASE_URL from environment variables
     db_user = os.getenv("POSTGRES_USER")
