@@ -178,7 +178,7 @@ def analyze_code_with_llm(prompt, data):
         chat_completion = client.chat.completions.create(
             messages=[
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Please help to review the following pull request data. Remember to keep your response in 2 sections 1 is Description(use ***Description*** as title and try to be concise) and 1 is Suggestions (use ***Suggestions*** as title and start each suggestion in format of number. like 4.).: \n{data}"}
+                {"role": "user", "content": f"Please help to review the following pull request data. Remember to keep your response in 2 sections 1 is Description(use ***Description*** as title and try to be concise) and 1 is Suggestions (use ***Suggestions*** as title and start each suggestion in format of number. like 4.). Ensure the response is organized, avoids repetition, and categorizes suggestions effectively: \n{data}"}
             ],
             model=os.getenv("GROQ_MODEL_NAME", "llama3-8b-8192"),
             temperature=0.5,
