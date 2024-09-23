@@ -2,27 +2,30 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import teamLogo from '@/images/team_logo.png';
+import UOBLogo from '@/images/uob-logo.png';
 
 const Header: React.FC = () => {
   return (
-    <header className="bg-foreground text-white py-4 shadow-md">
+    <header className="bg-foreground text-white py-4 shadow-2xl">
       <div className="container mx-auto flex justify-between items-center px-4">
-        <div className="text-lg font-bold">
-            <Image
-                src={teamLogo}
-                alt="Team Logo"
-                className="rounded-full"
-                width={200}
-            />
+        <div className="text-lg font-bold flex flex-row items-center">
+          <Image src={UOBLogo} alt="UOB" width={40} />
+          <div className="text-3xl cursor-default">
+            <Link href="/">
+              <p>UOB</p>
+            </Link>
+          </div>
         </div>
-
         <nav className="space-x-4 flex flex-row">
           <Link href="/">
             <p className="text-gray-300 hover:text-white">Dashboard</p>
           </Link>
-          <Link href="/feedback">
-            <p className="text-gray-300 hover:text-white">Feedback</p>
+          <Link 
+            href="https://github.com/Jway77-ai/uob-hackathon-dragons"
+            target="_blank"
+            rel="noopener noreferrer"
+            >
+            <p className="text-gray-300 hover:text-white">GitHub</p>
           </Link>
         </nav>
       </div>
