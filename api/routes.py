@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from groq import Groq
 from .models import PR, Conversation
-from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM
+from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM, handle_date
 #from .extensions import db
 from .index import db
 import os
@@ -28,32 +28,43 @@ def sync_all_prs():
             status = pr_data.get('state')
             source_branch = pr_data['source']['branch']['name']
             target_branch = pr_data['destination']['branch']['name']
+            created_date = handle_date(pr_data.get('created_on'))
+            last_modified = handle_date(pr_data.get('updated_on'))
 
             # Check if the PR already exists in the database
             existing_pr = PR.query.filter_by(pr_id=pr_id).first()
             if existing_pr:
-                continue  # Skip if PR already exists
+                # Update existing PR with new information
+                existing_pr.title = title
+                existing_pr.status = status
+                existing_pr.sourceBranchName = source_branch
+                existing_pr.targetBranchName = target_branch
+                existing_pr.last_modified = last_modified
+                db.session.add(existing_pr)
+            else:
+                # Process PR diff and feedback for new PRs
+                files_diff = get_files_diff(pr_id)
+                processed_diff = process_files_diff(files_diff)
+                prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
+                with open(prompt_file_path, 'r') as file:
+                    prompt_text = file.read().strip()
+                feedback = analyze_code_with_llm(prompt_text, processed_diff)
 
-            # Process PR diff and feedback
-            files_diff = get_files_diff(pr_id)
-            processed_diff = process_files_diff(files_diff)
-            prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
-            with open(prompt_file_path, 'r') as file:
-                prompt_text = file.read().strip()
-            feedback = analyze_code_with_llm(prompt_text, processed_diff)
+                # Insert new PR data
+                new_pr_diff = PR(
+                    pr_id=pr_id,
+                    title=title,
+                    status=status,
+                    sourceBranchName=source_branch,
+                    targetBranchName=target_branch,
+                    content=processed_diff,
+                    initialFeedback=feedback,
+                    feedback=feedback,
+                    created_date=created_date,
+                    last_modified=last_modified
+                )
+                db.session.add(new_pr_diff)
 
-            # Insert new PR data with latest feedback
-            new_pr_diff = PR(
-                pr_id=pr_id,
-                title=title,
-                status=status,
-                sourceBranchName=source_branch,
-                targetBranchName=target_branch,
-                content=processed_diff,
-                initialFeedback=feedback,
-                feedback=feedback  # Latest feedback
-            )
-            db.session.add(new_pr_diff)
             db.session.commit()
 
         return jsonify({'status': 'success', 'message': 'All PRs synced and saved successfully'}), 200
@@ -75,11 +86,16 @@ def handle_pr():
 
     if pr_id is None:
         return jsonify({'status': 'error', 'message': 'PR ID not found'}), 400
+    
+    created_date = handle_date(pr_data.get('created_on'), to_sgt=True)
+    updated_date = handle_date(pr_data.get('updated_on'), to_sgt=True)
+
     # If this pr_id already exists, update it instead
     pr_entry = PR.query.filter_by(pr_id=pr_id).first()
     if pr_entry:
         pr_entry.title = pr_data.get('title', 'No Title')
         pr_entry.status = pr_data['state']
+        pr_entry.last_modified = updated_date
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Pull request status updated successfully'}), 200
     else:
@@ -110,7 +126,9 @@ def handle_pr():
                 targetBranchName=target_branch,
                 content=processed_diff,
                 initialFeedback=feedback,
-                feedback=feedback
+                feedback=feedback,
+                created_date=created_date,
+                last_modified=updated_date
             )
             db.session.add(new_pr_diff)
             db.session.commit()
@@ -129,7 +147,7 @@ def summary():
         numEntriesToDisplay = int(os.getenv("NUMENTRIESTODISPLAY", 15))  # Display 15 by default
         
         # Query the latest entries, ordered by date_created in descending order
-        latest_entries = PR.query.order_by(PR.date_created.desc()).limit(numEntriesToDisplay).all()
+        latest_entries = PR.query.order_by(PR.last_modified.desc()).limit(numEntriesToDisplay).all()
         
         # Build the response while handling None values for date_created
         entries = []
@@ -142,8 +160,8 @@ def summary():
                 'targetBranchName': entry.targetBranchName,
                 'content': entry.content,
                 'initialFeedback': entry.initialFeedback,
-                'feedback': entry.feedback,
-                'date_created': entry.date_created.isoformat() if entry.date_created else None  # Handle None here
+                'created_date': handle_date(entry.created_date, to_sgt=True, as_string=True),
+                'last_modified': handle_date(entry.last_modified, to_sgt=True, as_string=True)
             })
         # Log the entries for debugging purposes
         logging.info(f"Entries: {entries}")
@@ -171,7 +189,8 @@ def latest():
             'content': latest_entry.content,
             'initialFeedback': latest_entry.initialFeedback,
             'feedback': latest_entry.feedback,
-            'date_created': latest_entry.date_created.isoformat()
+            'created_date': handle_date(latest_entry.created_date, to_sgt=True, as_string=True),
+            'last_modified': handle_date(latest_entry.last_modified, to_sgt=True, as_string=True)
         }}), 200
     except Exception as e:
         logging.error(f"Error fetching summary: {e}")
@@ -207,7 +226,8 @@ def pr_entry(pr_id):
                 'initialFeedback': pr_entry.initialFeedback,
                 'feedback': pr_entry.feedback,
                 'conversation_history': conversation_history,
-                'date_created': pr_entry.date_created.isoformat()
+                'created_date': handle_date(pr_entry.created_date, to_sgt=True, as_string=True),
+                'last_modified': handle_date(pr_entry.last_modified, to_sgt=True, as_string=True)
             }
             return jsonify(pr_data), 200
         except Exception as e:
