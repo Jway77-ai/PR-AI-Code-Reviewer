@@ -10,14 +10,6 @@ load_dotenv()
 BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")  # Your OAuth consumer key
 BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")  # Your OAuth consumer secret
 
-# Check if the environment variables are loaded correctly
-if not BITBUCKET_KEY or not BITBUCKET_SECRET:
-    print("Error: BITBUCKET_KEY or BITBUCKET_SECRET not set. Please check your environment variables.")
-    exit(1)
-
-print(f"Using BITBUCKET_KEY: {BITBUCKET_KEY}")
-print(f"Using BITBUCKET_SECRET: {BITBUCKET_SECRET}")
-
 # Request URL for access token (using client credentials flow)
 token_url = "https://bitbucket.org/site/oauth2/access_token"
 
@@ -37,14 +29,6 @@ if response.status_code == 200:
     # Retrieve repository details from environment variables
     BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
     BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
-
-    # Check if the environment variables are loaded correctly
-    if not BITBUCKET_WORKSPACE or not BITBUCKET_REPO_SLUG:
-        print("Error: BITBUCKET_WORKSPACE or BITBUCKET_REPO_SLUG not set. Please check your environment variables.")
-        exit(1)
-
-    print(f"Using BITBUCKET_WORKSPACE: {BITBUCKET_WORKSPACE}")
-    print(f"Using BITBUCKET_REPO_SLUG: {BITBUCKET_REPO_SLUG}")
 
     # URL to get the pull request diff
     url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/pullrequests/9/diff"
