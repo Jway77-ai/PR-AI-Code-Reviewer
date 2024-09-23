@@ -136,8 +136,27 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
             </div>
           </div>
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Feedback</h3>
-            <p className="mt-2 text-gray-600 bg-yellow-50 p-4 rounded-lg border border-yellow-200">{prDetails.feedback}</p>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              Feedback
+            </h3>
+            <div className="mt-2 text-gray-600 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <div>
+                <h4 className="font-semibold">Description</h4>
+                <p>
+                  {prDetails.feedback.split('***')[2]}
+                </p>
+              </div>
+              <div className="mt-4">
+                <h4 className="font-semibold">Suggested Solution</h4>
+                <div>
+                  {prDetails.feedback.split('***')[4].split(/(?=\d+\.\s)/).map((solution, index) => (
+                    <p key={index} className="mb-2">
+                      {solution}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
