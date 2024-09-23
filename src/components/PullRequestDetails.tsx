@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { PullRequest } from "./Dashboard";
+import { getStatusColor } from "./Dashboard";
 
 
 
@@ -88,7 +89,7 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 Status
               </h3>
-              <p className="text-gray-600">{prDetails.status}</p>
+              <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${getStatusColor(prDetails.status)}`}>{prDetails.status}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-6 mb-8">

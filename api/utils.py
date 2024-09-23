@@ -178,7 +178,7 @@ def analyze_code_with_llm(prompt, data):
         chat_completion = client.chat.completions.create(
             messages=[
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Please help to review the following pull request data: \n{data}"}
+                {"role": "user", "content": f"Please help to review the following pull request data and please format the responce in multi paragraphs if possible \n Structure you responce in 2 aspects, 1 is decription of this pull request(Use ***Description*** as title), the other is you proposed solution(Use ***Suggested Solution*** as title): \n{data}"}
             ],
             model=os.getenv("GROQ_MODEL_NAME", "llama3-8b-8192"),
             temperature=0.5,

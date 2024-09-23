@@ -15,6 +15,19 @@ export interface PullRequest {
   feedback: string;
 }
 
+export const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "open":
+      return "bg-green-500";
+    case "merged":
+      return "bg-purple-500";
+    case "declined":
+      return "bg-red-500";
+    default:
+      return "bg-gray-500";
+  }
+};
+
 const Dashboard: React.FC = () => {
   const [prData, setPrData] = useState<PullRequest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,19 +74,6 @@ const Dashboard: React.FC = () => {
       hour12: true,
     };
     return new Date(dateString).toLocaleString("en-US", options);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "open":
-        return "bg-green-500";
-      case "merged":
-        return "bg-purple-500";
-      case "declined":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
   };
 
   return (
