@@ -147,7 +147,7 @@ def summary():
         numEntriesToDisplay = int(os.getenv("NUMENTRIESTODISPLAY", 15))  # Display 15 by default
         
         # Query the latest entries, ordered by date_created in descending order
-        latest_entries = PR.query.order_by(PR.date_created.desc()).limit(numEntriesToDisplay).all()
+        latest_entries = PR.query.order_by(PR.last_modified.desc()).limit(numEntriesToDisplay).all()
         
         # Build the response while handling None values for date_created
         entries = []
