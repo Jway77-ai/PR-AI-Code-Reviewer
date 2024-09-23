@@ -18,6 +18,44 @@ interface Message {
   bot: string;
 }
 
+// Utility function to get the base URL
+const getBaseUrl = () => {
+  if (process.env.NODE_ENV === "development") {
+    return "http://127.0.0.1:8000/api";
+  }
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://uob-hackathon-dragons.vercel.app/api"
+  );
+};
+
+// Utility function for API calls
+const apiCall = async (
+  endpoint: string,
+  method: string = "GET",
+  body?: any
+) => {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
+
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
+  }
+
+  return response.json();
+};
+
 const Chatbot: React.FC<Props> = ({ prId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>("");
@@ -32,22 +70,13 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
     }
     setError(null);
     try {
-      const response = await fetch(
-        `https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/conversations`
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch conversation history");
-      }
-
+      const data = await apiCall(`/pr/${prId}/conversations`);
       const formattedMessages: Message[] = data.conversations.map(
         (conv: ConversationItem) => ({
           user: conv.message,
           bot: "",
         })
       );
-
       setMessages(formattedMessages);
     } catch (error) {
       console.error("Error fetching conversation history:", error);
@@ -61,43 +90,27 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
   }, [fetchConversationHistory, prId]);
 
   const handleSend = async () => {
-    if (!input.trim()) return; // Ignore empty messages
+    if (!input.trim()) return;
     setLoading(true);
     setError(null);
 
     const userMessage = input;
     setInput("");
 
-    // Add user's message to chat
     const newMessages = [...messages, { user: userMessage, bot: "" }];
     setMessages(newMessages);
 
     try {
-      // Save user message
       await sendConversationToAPI(userMessage, "User");
 
-      // Send user message to Flask API to get the bot response
-      const response = await fetch(`https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/groq-response`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: userMessage, prId: prId }),
+      const data = await apiCall(`/pr/${prId}/groq-response`, "POST", {
+        message: userMessage,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to get response from API.");
-      }
-
       const botResponse = data.response;
 
-      // Add bot's response to chat
       const updatedMessages = [...newMessages, { user: "", bot: botResponse }];
       setMessages(updatedMessages);
 
-      // Save bot response
       await sendConversationToAPI(botResponse, "System");
     } catch (error) {
       console.error("Error fetching bot response:", error);
@@ -117,29 +130,8 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
 
   const sendConversationToAPI = async (message: string, role: string) => {
     try {
-      const response = await fetch(
-        `https://uob-hackathon-dragons.vercel.app/api/pr/${prId}/conversation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ message, role }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error(
-          "Error saving conversation:",
-          response.status,
-          data.message
-        );
-        throw new Error(data.message || "Failed to save conversation");
-      } else {
-        console.log("Conversation saved successfully!");
-      }
+      await apiCall(`/pr/${prId}/conversation`, "POST", { message, role });
+      console.log("Conversation saved successfully!");
     } catch (err) {
       console.error("Error sending conversation to API:", err);
       throw err;
