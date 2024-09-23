@@ -1,5 +1,3 @@
-// components/Chatbot.tsx
-
 "use client";
 import { useEffect, useState, useCallback } from "react";
 
@@ -18,8 +16,12 @@ interface Message {
   bot: string;
 }
 
+interface ApiResponse {
+  [key: string]: unknown;
+}
+
 // Utility function to get the base URL
-const getBaseUrl = () => {
+const getBaseUrl = (): string => {
   if (process.env.NODE_ENV === "development") {
     return "http://127.0.0.1:8000/api";
   }
@@ -30,11 +32,11 @@ const getBaseUrl = () => {
 };
 
 // Utility function for API calls
-const apiCall = async (
+const apiCall = async <T extends ApiResponse>(
   endpoint: string,
   method: string = "GET",
-  body?: any
-) => {
+  body?: Record<string, unknown>
+): Promise<T> => {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}${endpoint}`;
 
@@ -49,11 +51,11 @@ const apiCall = async (
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
+      (errorData.error as string) || `HTTP error! status: ${response.status}`
     );
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 };
 
 const Chatbot: React.FC<Props> = ({ prId }) => {
@@ -70,7 +72,9 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
     }
     setError(null);
     try {
-      const data = await apiCall(`/pr/${prId}/conversations`);
+      const data = await apiCall<{ conversations: ConversationItem[] }>(
+        `/pr/${prId}/conversations`
+      );
       const formattedMessages: Message[] = data.conversations.map(
         (conv: ConversationItem) => ({
           user: conv.message,
@@ -103,9 +107,11 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
     try {
       await sendConversationToAPI(userMessage, "User");
 
-      const data = await apiCall(`/pr/${prId}/groq-response`, "POST", {
-        message: userMessage,
-      });
+      const data = await apiCall<{ response: string }>(
+        `/pr/${prId}/groq-response`,
+        "POST",
+        { message: userMessage }
+      );
       const botResponse = data.response;
 
       const updatedMessages = [...newMessages, { user: "", bot: botResponse }];
@@ -130,7 +136,10 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
 
   const sendConversationToAPI = async (message: string, role: string) => {
     try {
-      await apiCall(`/pr/${prId}/conversation`, "POST", { message, role });
+      await apiCall<{ success: boolean }>(`/pr/${prId}/conversation`, "POST", {
+        message,
+        role,
+      });
       console.log("Conversation saved successfully!");
     } catch (err) {
       console.error("Error sending conversation to API:", err);
@@ -151,7 +160,9 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
                 : "bg-gray-200 text-gray-800 self-start"
             }`}
           >
-            <p className="font-semibold">{msg.user ? "You:" : "Bot:"}</p>
+            <p className="font-semibold">
+              {msg.user ? "You:" : "UOB Code Reviewer:"}
+            </p>
             <p>{msg.user || msg.bot}</p>
           </div>
         ))}
