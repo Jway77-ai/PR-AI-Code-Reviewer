@@ -9,13 +9,13 @@ interface ConversationItem {
   id: number;
   message: string;
   date_created: string;
+  role: string;
 }
 
 interface Message {
-  user: string;
-  bot: string;
+  content: string;
+  role: string;
 }
-
 interface ApiResponse {
   [key: string]: unknown;
 }
@@ -77,8 +77,8 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       );
       const formattedMessages: Message[] = data.conversations.map(
         (conv: ConversationItem) => ({
-          user: conv.message,
-          bot: "",
+          content: conv.message,
+          role: conv.role.toLowerCase(),
         })
       );
       setMessages(formattedMessages);
@@ -101,7 +101,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
     const userMessage = input;
     setInput("");
 
-    const newMessages = [...messages, { user: userMessage, bot: "" }];
+    const newMessages = [...messages, { content: userMessage, role: "user" }];
     setMessages(newMessages);
 
     try {
@@ -114,7 +114,10 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
       );
       const botResponse = data.response;
 
-      const updatedMessages = [...newMessages, { user: "", bot: botResponse }];
+      const updatedMessages = [
+        ...newMessages,
+        { content: botResponse, role: "system" },
+      ];
       setMessages(updatedMessages);
 
       await sendConversationToAPI(botResponse, "System");
@@ -155,15 +158,15 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
           <div
             key={idx}
             className={`p-2 rounded-lg ${
-              msg.user
+              msg.role === "user"
                 ? "bg-blue-100 text-blue-800 self-end"
                 : "bg-gray-200 text-gray-800 self-start"
             }`}
           >
             <p className="font-semibold">
-              {msg.user ? "You:" : "UOB Code Reviewer:"}
+              {msg.role === "user" ? "You:" : "UOB Code Reviewer:"}
             </p>
-            <p>{msg.user || msg.bot}</p>
+            <p>{msg.content}</p>
           </div>
         ))}
       </div>
