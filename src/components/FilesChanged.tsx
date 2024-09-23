@@ -37,49 +37,52 @@ const FilesChanged: React.FC<FileChangeProps> = ({ content }) => {
   };
 
   const fileChanges = parseContent(content);
+  const [openStates, setOpenStates] = useState<boolean[]>(Array(fileChanges.length).fill(true)); // Track open states
+
+  const toggleVisibility = (index: number) => {
+    setOpenStates(prev => {
+      const newStates = [...prev];
+      newStates[index] = !newStates[index];
+      return newStates;
+    });
+  };
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-4 mb-6">
-      {fileChanges.map(({ path, linesAdded, linesRemoved }, index) => {
-        const [isOpen, setIsOpen] = useState(true); // Set initial state to true
-
-        const toggleVisibility = () => setIsOpen(!isOpen);
-
-        return (
-          <div key={index} className="mb-4">
-            <h3 
-              className="font-semibold text-lg border-b pb-2 mb-2 cursor-pointer flex items-center hover:bg-purple-200 py-2 px-2 rounded hover:cursor-pointer transition-all duration-300" 
-              onClick={toggleVisibility}
-            >
-              {/* Arrow icon */}
-              <span className="mr-2">
-                {isOpen ? (
-                  <FaChevronUp />
-                ) : (
-                  <FaChevronDown />
-                )}
-              </span>
-              {path}
-            </h3>
-            {isOpen && (
-              <div className="text-gray-600">
-                <div className="mb-4">
-                  <span className="text-green-600 font-semibold">Lines Added:</span>
-                  <pre className="bg-green-50 p-2 rounded mt-2 text-sm">
-                    <code>{linesAdded || 'No lines added'}</code>
-                  </pre>
-                </div>
-                <div>
-                  <span className="text-red-600 font-semibold">Lines Removed:</span>
-                  <pre className="bg-red-50 p-2 rounded mt-2 text-sm">
-                    <code>{linesRemoved || 'No lines removed'}</code>
-                  </pre>
-                </div>
+      {fileChanges.map(({ path, linesAdded, linesRemoved }, index) => (
+        <div key={index} className="mb-4">
+          <h3 
+            className="font-semibold text-lg border-b pb-2 mb-2 cursor-pointer flex items-center hover:bg-purple-200 py-2 px-2 rounded transition-all duration-300" 
+            onClick={() => toggleVisibility(index)} // Toggle the specific file change
+          >
+            {/* Arrow icon */}
+            <span className="mr-2">
+              {openStates[index] ? (
+                <FaChevronUp />
+              ) : (
+                <FaChevronDown />
+              )}
+            </span>
+            {path}
+          </h3>
+          {openStates[index] && (
+            <div className="text-gray-600">
+              <div className="mb-4">
+                <span className="text-green-600 font-semibold">Lines Added:</span>
+                <pre className="bg-green-50 p-2 rounded mt-2 text-sm">
+                  <code>{linesAdded || 'No lines added'}</code>
+                </pre>
               </div>
-            )}
-          </div>
-        );
-      })}
+              <div>
+                <span className="text-red-600 font-semibold">Lines Removed:</span>
+                <pre className="bg-red-50 p-2 rounded mt-2 text-sm">
+                  <code>{linesRemoved || 'No lines removed'}</code>
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
