@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { FaSync, FaExternalLinkAlt } from "react-icons/fa";
 import Link from "next/link";
 
-interface PullRequest {
+export interface PullRequest {
   pr_id: number;
   title: string;
   status: string;
@@ -123,7 +123,7 @@ const Dashboard: React.FC = () => {
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pull Request
+                      Pull Request Title
                     </th>
                     <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       PR ID
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
                       Last Modified
                     </th>
                     <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
+                      Code Review
                     </th>
                   </tr>
                 </thead>
@@ -148,7 +148,7 @@ const Dashboard: React.FC = () => {
                       <tr key={pr.pr_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-normal">
                           <Link
-                            href={`/pull-requests/${pr.pr_id}`}
+                            href={`https://bitbucket.org/debugging-dragons/webhook-codedoc/pull-requests/${pr.pr_id}`}
                             className="hover:underline"
                           >
                             <div className="text-sm font-medium text-blue-600">

@@ -1,18 +1,9 @@
 "use client";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { PullRequest } from "./Dashboard";
 
-interface PullRequest {
-  id: number;
-  title: string;
-  status: string;
-  pr_id: string;
-  sourceBranchName: string;
-  targetBranchName: string;
-  date_created: string;
-  content: string;
-  feedback: string;
-}
+
 
 interface Props {
   prId: string;
@@ -79,6 +70,16 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div>
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Title
+              </h3>
+              <p className="text-gray-600 bg-gray-100 p-2 rounded">
+                {prDetails.title}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6 mb-8">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 Source Branch
               </h3>
               <p className="text-gray-600 bg-gray-100 p-2 rounded">
@@ -100,7 +101,15 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
                 Date Created
               </h3>
               <p className="text-gray-600">
-                {new Date(prDetails.date_created).toLocaleString()}
+                {prDetails.created_date}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Date Modified
+              </h3>
+              <p className="text-gray-600">
+                {prDetails.last_modified}
               </p>
             </div>
             <div>
