@@ -5,6 +5,8 @@ import { PullRequest } from "./Dashboard";
 import { getStatusColor } from "./Dashboard";
 import DateInfo from "./DateInfo";
 import FilesChanged from "./FilesChanged";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Props {
   prId: string;
@@ -26,6 +28,7 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
         }
         const data = await response.json();
         setPrDetails(data);
+        console.log(data);
       } catch (err) {
         setError("Error fetching data from backend.");
         console.error(err);
@@ -67,9 +70,7 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
             >
               {prDetails.title}
             </Link>
-            <span className="ml-2">
-              #{prDetails.pr_id}
-            </span>
+            <span className="ml-2">#{prDetails.pr_id}</span>
           </h2>
           <div className="flex flex-row items-center">
             <p className="text-gray-600 bg-gray-100 py-1 px-2 rounded hover:bg-purple-200 hover:text-black hover:cursor-pointer transition-all duration-300">
@@ -101,32 +102,39 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
             </p>
           </div>
           <div>
-            <DateInfo createdDate={prDetails.created_date} lastModified={prDetails.last_modified} />
+            <DateInfo
+              createdDate={prDetails.created_date}
+              lastModified={prDetails.last_modified}
+            />
           </div>
           <div className="mb-8">
             <FilesChanged content={prDetails.content} />
           </div>
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              Feedback
-            </h3>
             <div className="mt-2 text-gray-600 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <div>
-                <h4 className="font-semibold">Description</h4>
-                <p>{prDetails.feedback.split("***")[2]}</p>
-              </div>
               <div className="mt-4">
-                <h4 className="font-semibold">Suggested Solution</h4>
-                <div>
-                  {prDetails.feedback
-                    .split("***")[4]
-                    .split(/(?=\d+\.\s)/)
-                    .map((solution, index) => (
-                      <p key={index} className="mb-2">
-                        {solution}
-                      </p>
-                    ))}
-                </div>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  className={`whitespace-pre-wrap`}
+                  components={{
+                    code({ node, inline, className, children, ...props }: any) {
+                      return !inline ? (
+                        <code
+                          className={`p-2 whitespace-pre-wrap ${className}`}
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      ) : (
+                        <code className={`p-1 whitespace-pre-wrap ${className}`} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {prDetails.feedback}
+                </ReactMarkdown>
               </div>
             </div>
           </div>
