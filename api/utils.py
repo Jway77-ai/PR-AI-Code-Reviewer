@@ -192,16 +192,17 @@ def get_files_diff(pr_id):
 
 def process_files_diff(files_diff):
     """
-    Formats the files_diff into a string
-    """    
+    Formats the files_diff into a string, removing lines that appear in both lines_added and lines_removed as those lines are unchanged.
+    """
     formatted_string = "\n".join(
-    f"Path: {item['path']}\n"
-    f"Original Contents of file:\n" + item['original_contents'] + "\n"
-    f"Lines Added:\n" + "\n".join(f"  {line}" for line in item['lines_added']) + "\n"
-    f"Lines Removed:\n" + "\n".join(f"  {line}" for line in item['lines_removed'])
-    for item in files_diff
-)
+        f"Path: {item['path']}\n"
+        f"Original Contents of file:\n" + item['original_contents'] + "\n"
+        f"Lines Added:\n" + "\n".join(f"  {line}" for line in item['lines_added'] if line not in item['lines_removed']) + "\n"
+        f"Lines Removed:\n" + "\n".join(f"  {line}" for line in item['lines_removed'] if line not in item['lines_added'])
+        for item in files_diff
+    )
     return formatted_string
+
 
 def analyze_code_with_llm(prompt, data):
     """
