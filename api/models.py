@@ -9,6 +9,7 @@ class PR(db.Model):
     status = db.Column(db.String, nullable=False)
     sourceBranchName = db.Column(db.String, nullable=False)
     targetBranchName = db.Column(db.String, nullable=False)
+    rawDiff = db.Column(db.Text, nullable=True)
     content = db.Column(db.Text, nullable=True)
     initialFeedback = db.Column(db.Text, nullable=True)
     feedback = db.Column(db.Text, nullable=True)

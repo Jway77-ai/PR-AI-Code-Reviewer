@@ -11,6 +11,7 @@ export interface PullRequest {
   targetBranchName: string;
   created_date: string;
   last_modified: string;
+  rawDiff: string;
   content: string;
   feedback: string;
 }

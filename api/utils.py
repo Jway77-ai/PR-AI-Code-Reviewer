@@ -124,6 +124,15 @@ def get_file_contents(file_path):
         logging.error(f"Error fetching file contents from Bitbucket: {e}")
         raise
 
+def get_raw_files_diff(pr_id):
+    response = get_pr_from_repo(pr_id)
+    print(response)
+    if response.status_code != 200:
+        logging.error(f"Failed to retrieve PR diff: {response.status_code}, {response.text}")
+        raise Exception("Failed to retrieve PR diff!!")
+    else:
+        return response.text
+
 def get_files_diff(pr_id):
     """
     Gets the file diff from bitbucket based on the given pr_id, and extracts the required data into 'detailed_changes'.

@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from groq import Groq
 from .models import PR, Conversation
-from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM, handle_date
+from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM, handle_date, get_raw_files_diff
 #from .extensions import db
 from .index import db
 import os
@@ -43,6 +43,7 @@ def sync_all_prs():
                 db.session.add(existing_pr)
             else:
                 # Process PR diff and feedback for new PRs
+                raw_files_diff = get_raw_files_diff(pr_id)
                 files_diff = get_files_diff(pr_id)
                 processed_diff = process_files_diff(files_diff)
                 prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
@@ -57,6 +58,7 @@ def sync_all_prs():
                     status=status,
                     sourceBranchName=source_branch,
                     targetBranchName=target_branch,
+                    rawDiff = raw_files_diff,
                     content=processed_diff,
                     initialFeedback=feedback,
                     feedback=feedback,
@@ -108,6 +110,7 @@ def handle_pr():
 
         try:
             # Fetch the PR diff from Bitbucket
+            raw_files_diff = get_raw_files_diff(pr_id)
             files_diff = get_files_diff(pr_id)
             processed_diff = process_files_diff(files_diff)
 
@@ -124,6 +127,7 @@ def handle_pr():
                 status=status,  # Now fetching status from 'state' field in the main body
                 sourceBranchName=source_branch,
                 targetBranchName=target_branch,
+                rawDiff = raw_files_diff,
                 content=processed_diff,
                 initialFeedback=feedback,
                 feedback=feedback,
@@ -215,13 +219,14 @@ def pr_entry(pr_id):
                 'message': conv.message,
                 'date_created': conv.date_created.isoformat()
             } for conv in conversations]
-
+            logging.info(f"Rawdiff: {pr_entry.rawDiff}")
             pr_data = {
                 'pr_id': pr_entry.pr_id,
                 'title': pr_entry.title,
                 'status': pr_entry.status,
                 'sourceBranchName': pr_entry.sourceBranchName,
                 'targetBranchName': pr_entry.targetBranchName,
+                'rawDiff' : pr_entry.rawDiff,
                 'content': pr_entry.content,
                 'initialFeedback': pr_entry.initialFeedback,
                 'feedback': pr_entry.feedback,

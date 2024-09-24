@@ -5,6 +5,7 @@ import { PullRequest } from "./Dashboard";
 import { getStatusColor } from "./Dashboard";
 import DateInfo from "./DateInfo";
 import FilesChanged from "./FilesChanged";
+import PullRequestDiff from "./PullRequestDiff";
 
 interface Props {
   prId: string;
@@ -102,6 +103,9 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
           </div>
           <div>
             <DateInfo createdDate={prDetails.created_date} lastModified={prDetails.last_modified} />
+          </div>
+          <div className="mb-8">
+            <PullRequestDiff pullRequestDiff={prDetails.rawDiff} />
           </div>
           <div className="mb-8">
             <FilesChanged content={prDetails.content} />
