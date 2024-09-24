@@ -8,17 +8,22 @@ interface FileChangeProps {
 const FilesChanged: React.FC<FileChangeProps> = ({ content }) => {
   const parseContent = (content: string) => {
     const sections = content.split(/(?=Path: )/).filter(section => section.trim() !== '');
-    const fileChanges: { path: string; linesAdded: string; linesRemoved: string }[] = [];
+    const fileChanges: { path: string; originalContents: string; linesAdded: string; linesRemoved: string }[] = [];
 
     sections.forEach(section => {
       const lines = section.split('\n');
       let path = '';
+      let originalContents = '';
       let linesAdded = '';
       let linesRemoved = '';
 
       lines.forEach((line, index) => {
         if (line.startsWith('Path: ')) {
           path = line.replace('Path: ', '').trim();
+        } else if (line.startsWith('Original Contents of file:')) {
+          for (let i = index + 1; i < lines.length && !lines[i].startsWith('Original Contents of file:'); i++) {
+            originalContents += lines[i] + '\n';
+          }
         } else if (line.startsWith('Lines Added:')) {
           for (let i = index + 1; i < lines.length && !lines[i].startsWith('Lines Removed:'); i++) {
             linesAdded += lines[i] + '\n';
@@ -30,7 +35,7 @@ const FilesChanged: React.FC<FileChangeProps> = ({ content }) => {
         }
       });
 
-      fileChanges.push({ path, linesAdded: linesAdded.trim(), linesRemoved: linesRemoved.trim() });
+      fileChanges.push({ path, originalContents: originalContents.trim(), linesAdded: linesAdded.trim(), linesRemoved: linesRemoved.trim() });
     });
 
     return fileChanges;
@@ -49,7 +54,7 @@ const FilesChanged: React.FC<FileChangeProps> = ({ content }) => {
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-4 mb-6">
-      {fileChanges.map(({ path, linesAdded, linesRemoved }, index) => (
+      {fileChanges.map(({ path, originalContents, linesAdded, linesRemoved }, index) => (
         <div key={index} className="mb-4">
           <h3 
             className="font-semibold text-lg border-b pb-2 mb-2 cursor-pointer flex items-center hover:bg-purple-200 py-2 px-2 rounded transition-all duration-300" 
@@ -67,6 +72,13 @@ const FilesChanged: React.FC<FileChangeProps> = ({ content }) => {
           </h3>
           {openStates[index] && (
             <div className="text-gray-600">
+              <div>
+                <span className="text-blue-600 font-semibold">Original Contents:</span>
+                <pre className="bg-blue-50 p-2 rounded mt-2 text-sm">
+                  <code>{originalContents || 'This is a new file with no original contents'}</code>
+                </pre>
+              </div>
+              <br></br>
               <div className="mb-4">
                 <span className="text-green-600 font-semibold">Lines Added:</span>
                 <pre className="bg-green-50 p-2 rounded mt-2 text-sm">
