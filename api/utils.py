@@ -89,6 +89,41 @@ def get_pr_from_repo(pr_id):
         logging.error(f"Error fetching PR from Bitbucket: {e}")
         raise
 
+def get_file_contents(file_path):
+    try:
+        BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")
+        BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")
+
+        token_url = "https://bitbucket.org/site/oauth2/access_token"
+        response = requests.post(
+            token_url,
+            data={"grant_type": "client_credentials"},
+            auth=HTTPBasicAuth(BITBUCKET_KEY, BITBUCKET_SECRET)
+        )
+        if response.status_code == 200:
+            access_token = response.json().get("access_token")
+            BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
+            BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
+
+            url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/src/main/{file_path}"
+            headers = {'Authorization': f'Bearer {access_token}'}
+            
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                return response.text
+            elif response.status_code == 404:
+                logging.info(f"File '{file_path}' is a new file.")
+                return "<This is a new file with no original content.>"
+            else:
+                logging.error(f"Failed to fetch file content: {response.status_code}, {response.text}")
+                return None
+        else:
+            logging.error(f"Failed to get access token: {response.status_code}, {response.text}")
+            raise Exception("Failed to get access token")
+    except Exception as e:
+        logging.error(f"Error fetching file contents from Bitbucket: {e}")
+        raise
+
 def get_files_diff(pr_id):
     """
     Gets the file diff from bitbucket based on the given pr_id, and extracts the required data into 'detailed_changes'.
@@ -96,11 +131,13 @@ def get_files_diff(pr_id):
     a list of lines added, and a list of lines removed.
     Example of files_diff:
     files_diff = [
-    {'path': "src/main.py",
+    {'path': "main.py",
+        'original_contents': ["print('Remove me')]"],
         'lines_added': ["print('Hello, world!')", "print('Bye, world!')"],
         'lines_removed': ["print('Remove me')]"]
         }, 
-    {'path': "src/quickMaths.py",
+    {'path': "quickMaths.py",
+        'original_contents': ["a = 5"],
         'lines_added': ["x = 1", "y = 2", "z = 3"],
         'lines_removed': []
         }
@@ -122,8 +159,10 @@ def get_files_diff(pr_id):
                 if current_file:
                     # Strip the 'a/' prefix from the path
                     file_path = current_file.replace('a/', '').replace('b/', '')
+                    original_contents = get_file_contents(file_path)
                     detailed_changes.append({
                         'path': file_path,
+                        'original_contents': original_contents,
                         'lines_added': lines_added,
                         'lines_removed': lines_removed
                     })
@@ -142,8 +181,10 @@ def get_files_diff(pr_id):
         if current_file:
             # Strip the 'a/' prefix from the path
             file_path = current_file.replace('a/', '').replace('b/', '')
+            original_contents = get_file_contents(file_path)
             detailed_changes.append({
                 'path': file_path,
+                'original_contents': original_contents,
                 'lines_added': lines_added,
                 'lines_removed': lines_removed
             })
@@ -155,6 +196,7 @@ def process_files_diff(files_diff):
     """    
     formatted_string = "\n".join(
     f"Path: {item['path']}\n"
+    f"Original Contents of file:\n" + item['original_contents'] + "\n"
     f"Lines Added:\n" + "\n".join(f"  {line}" for line in item['lines_added']) + "\n"
     f"Lines Removed:\n" + "\n".join(f"  {line}" for line in item['lines_removed'])
     for item in files_diff
@@ -178,7 +220,7 @@ def analyze_code_with_llm(prompt, data):
         chat_completion = client.chat.completions.create(
             messages=[
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Please help to review the following pull request data. Remember to keep your response in 2 sections 1 is Description(use ***Description*** as title and try to be concise) and 1 is Suggestions (use ***Suggestions*** as title and start each suggestion in format of number. like 4.). Ensure the response is organized, avoids repetition, and categorizes suggestions effectively: \n{data}"}
+                {"role": "user", "content": f"Please help to review the following pull request data. For each modified file, I have provided the original contents of that file, as well as the lines added and removed: \n{data}"}
             ],
             model=os.getenv("GROQ_MODEL_NAME", "llama3-8b-8192"),
             temperature=0.5,
