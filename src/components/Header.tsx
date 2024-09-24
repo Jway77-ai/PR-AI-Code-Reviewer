@@ -1,8 +1,8 @@
 "use client";
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import UOBLogo from '@/images/uob-logo.png';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import UOBLogo from "@/images/uob-logo.png";
 
 const Header: React.FC = () => {
   return (
@@ -18,14 +18,18 @@ const Header: React.FC = () => {
         </div>
         <nav className="space-x-4 flex flex-row">
           <Link href="/">
-            <p className="text-gray-300 hover:text-white">Dashboard</p>
+            <p className="text-white-300 hover:text-white transition-transform duration-300 transform hover:scale-105">
+              Dashboard
+            </p>
           </Link>
-          <Link 
+          <Link
             href="https://github.com/Jway77-ai/uob-hackathon-dragons"
             target="_blank"
             rel="noopener noreferrer"
-            >
-            <p className="text-gray-300 hover:text-white">GitHub</p>
+          >
+            <p className="text-white-300 hover:text-white transition-transform duration-300 transform hover:scale-105">
+              GitHub
+            </p>
           </Link>
         </nav>
       </div>

@@ -44,7 +44,7 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
   const prUrl = `https://bitbucket.org/debugging-dragons/webhook-codedoc/pull-requests/${prId}`;
 
   return (
-    <div className="max-w-3xl mx-auto p-8 mt-5 bg-white shadow-lg rounded-lg">
+    <div className="max-w-full mx-auto p-8 mt-5 bg-white shadow-lg rounded-lg">
       {loading && (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
@@ -72,8 +72,8 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
             </Link>
             <span className="ml-2">#{prDetails.pr_id}</span>
           </h2>
-          <div className="flex flex-row items-center">
-            <p className="text-gray-600 bg-gray-100 py-1 px-2 rounded hover:bg-purple-200 hover:text-black hover:cursor-pointer transition-all duration-300">
+          <div className="flex flex-row items-center my-3">
+            <p className="text-gray-600 py-1 px-2 rounded hover:bg-purple-200 hover:text-black hover:cursor-pointer transition-all duration-300">
               {prDetails.sourceBranchName}
             </p>
             <span>
@@ -90,7 +90,7 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
                 ></path>
               </svg>
             </span>
-            <p className="text-gray-600 bg-gray-100 py-1 px-2 rounded hover:bg-purple-200 hover:text-black hover:cursor-pointer transition-all duration-300">
+            <p className="text-gray-600 py-1 px-2 rounded hover:bg-purple-200 hover:text-black hover:cursor-pointer transition-all duration-300">
               {prDetails.targetBranchName}
             </p>
             <p
@@ -101,13 +101,13 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
               {prDetails.status}
             </p>
           </div>
-          <div>
+          <div className="mb-3">
             <DateInfo
               createdDate={prDetails.created_date}
               lastModified={prDetails.last_modified}
             />
           </div>
-          <div className="mb-8">
+          <div className="mt-4">
             <FilesChanged content={prDetails.content} />
           </div>
           <div className="mb-8">
