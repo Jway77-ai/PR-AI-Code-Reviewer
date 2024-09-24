@@ -21,7 +21,7 @@ const FilesChanged: React.FC<FileChangeProps> = ({ content }) => {
         if (line.startsWith('Path: ')) {
           path = line.replace('Path: ', '').trim();
         } else if (line.startsWith('Original Contents of file:')) {
-          for (let i = index + 1; i < lines.length && !lines[i].startsWith('Original Contents of file:'); i++) {
+          for (let i = index + 1; i < lines.length && !lines[i].startsWith('Lines Added:'); i++) {
             originalContents += lines[i] + '\n';
           }
         } else if (line.startsWith('Lines Added:')) {

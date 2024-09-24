@@ -116,7 +116,7 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
                 <p>{prDetails.feedback.split("***")[2]}</p>
               </div>
               <div className="mt-4">
-                <h4 className="font-semibold">Suggested Solution</h4>
+                <h4 className="font-semibold">Suggestions</h4>
                 <div>
                   {prDetails.feedback
                     .split("***")[4]
