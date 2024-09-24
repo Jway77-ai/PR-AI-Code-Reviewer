@@ -19,9 +19,17 @@ const PullRequestPage = async ({
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <PullRequestDetails prId={id} />
-      <Chatbot prId={id} />
-      <Footer />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto max-h-[calc(100vh-4rem)]"> {/* Adjusting to account for the header and footer */}
+          <PullRequestDetails prId={id} />
+        </div>
+        <div className="w-1/4 border-l border-gray-200 flex flex-col max-h-[calc(100vh-4rem)]">
+          <div className="flex-1 overflow-y-auto p-2 pb-16"> {/* Added bottom padding for the chatbot */}
+            <Chatbot prId={id} />
+          </div>
+        </div>
+      </div>
+      <Footer className="fixed bottom-0 left-0 right-0" />
     </div>
   );
 };

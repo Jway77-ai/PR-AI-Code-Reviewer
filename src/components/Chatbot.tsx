@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface Props {
   prId: string;
@@ -16,11 +16,11 @@ interface Message {
   content: string;
   role: string;
 }
+
 interface ApiResponse {
   [key: string]: unknown;
 }
 
-// Utility function to get the base URL
 const getBaseUrl = (): string => {
   if (process.env.NODE_ENV === "development") {
     return "http://127.0.0.1:8000/api";
@@ -31,7 +31,6 @@ const getBaseUrl = (): string => {
   );
 };
 
-// Utility function for API calls
 const apiCall = async <T extends ApiResponse>(
   endpoint: string,
   method: string = "GET",
@@ -89,7 +88,6 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
   }, [prId]);
 
   useEffect(() => {
-    console.log("Current prId:", prId); // For debugging
     fetchConversationHistory();
   }, [fetchConversationHistory, prId]);
 
@@ -151,7 +149,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
   };
 
   return (
-    <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col h-80">
+    <div className="flex flex-col h-full">
       {error && <div className="text-red-500 mb-2">{error}</div>}
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {messages.map((msg, idx) => (
