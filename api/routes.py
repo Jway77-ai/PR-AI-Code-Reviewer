@@ -96,7 +96,7 @@ def handle_pr():
         pr_entry.status = pr_data['state']
         pr_entry.last_modified = updated_date
         if pr_entry.lastCommitHash != pr_data['source']['commit']['hash']:
-            pr_entry.rawDiff, pr_entry.content, pr_entry.feedback = process_pr(pr_id, target_branch)
+            pr_entry.rawDiff, pr_entry.content, pr_entry.feedback = process_pr(pr_id, pr_entry.targetBranchName)
             pr_entry.lastCommitHash = pr_data['source']['commit']['hash']
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Pull request status updated successfully'}), 200

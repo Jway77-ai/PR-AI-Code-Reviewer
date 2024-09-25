@@ -190,7 +190,7 @@ def get_files_diff(pr_id, target_branch):
         if current_file:
             # Strip the 'a/' prefix from the path
             file_path = current_file.replace('a/', '').replace('b/', '')
-            original_contents = get_file_contents(file_path)
+            original_contents = get_file_contents(file_path, target_branch)
             detailed_changes.append({
                 'path': file_path,
                 'original_contents': original_contents,
