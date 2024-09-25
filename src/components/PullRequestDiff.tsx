@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import * as Diff2Html from 'diff2html';
 import 'diff2html/bundles/css/diff2html.min.css';
 
