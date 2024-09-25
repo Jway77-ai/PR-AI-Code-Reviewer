@@ -89,7 +89,7 @@ def get_pr_from_repo(pr_id):
         logging.error(f"Error fetching PR from Bitbucket: {e}")
         raise
 
-def get_file_contents(file_path):
+def get_file_contents(file_path, target_branch):
     try:
         BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")
         BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")
@@ -105,7 +105,7 @@ def get_file_contents(file_path):
             BITBUCKET_WORKSPACE = os.getenv("BITBUCKET_WORKSPACE")
             BITBUCKET_REPO_SLUG = os.getenv("BITBUCKET_REPO_SLUG")
 
-            url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/src/main/{file_path}"
+            url = f"https://api.bitbucket.org/2.0/repositories/{BITBUCKET_WORKSPACE}/{BITBUCKET_REPO_SLUG}/src/{target_branch}/{file_path}"
             headers = {'Authorization': f'Bearer {access_token}'}
             
             response = requests.get(url, headers=headers)
@@ -126,14 +126,13 @@ def get_file_contents(file_path):
 
 def get_raw_files_diff(pr_id):
     response = get_pr_from_repo(pr_id)
-    print(response)
     if response.status_code != 200:
         logging.error(f"Failed to retrieve PR diff: {response.status_code}, {response.text}")
         raise Exception("Failed to retrieve PR diff!!")
     else:
         return response.text
 
-def get_files_diff(pr_id):
+def get_files_diff(pr_id, target_branch):
     """
     Gets the file diff from bitbucket based on the given pr_id, and extracts the required data into 'detailed_changes'.
     'detailed_changes' is a list of files that have changed. For each file, there is a dict containing the path of the file,
@@ -168,7 +167,7 @@ def get_files_diff(pr_id):
                 if current_file:
                     # Strip the 'a/' prefix from the path
                     file_path = current_file.replace('a/', '').replace('b/', '')
-                    original_contents = get_file_contents(file_path)
+                    original_contents = get_file_contents(file_path, target_branch)
                     detailed_changes.append({
                         'path': file_path,
                         'original_contents': original_contents,

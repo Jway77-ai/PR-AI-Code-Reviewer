@@ -111,7 +111,7 @@ def handle_pr():
         try:
             # Fetch the PR diff from Bitbucket
             raw_files_diff = get_raw_files_diff(pr_id)
-            files_diff = get_files_diff(pr_id)
+            files_diff = get_files_diff(pr_id, target_branch)
             processed_diff = process_files_diff(files_diff)
 
             # Example LLM analysis (optional)
