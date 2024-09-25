@@ -40,8 +40,7 @@ def sync_all_prs():
                 existing_pr.sourceBranchName = source_branch
                 existing_pr.targetBranchName = target_branch
                 existing_pr.last_modified = last_modified
-                if existing_pr.lastCommitHash != lastCommitHash:
-                    pass # To add logic
+                existing_pr.lastCommitHash = lastCommitHash
                 db.session.add(existing_pr)
             else:
                 # Process PR diff and feedback for new PRs
