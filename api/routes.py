@@ -28,6 +28,7 @@ def sync_all_prs():
             status = pr_data.get('state')
             source_branch = pr_data['source']['branch']['name']
             target_branch = pr_data['destination']['branch']['name']
+            lastCommitHash = pr_data['source']['commit']['hash']
             created_date = handle_date(pr_data.get('created_on'))
             last_modified = handle_date(pr_data.get('updated_on'))
 
@@ -40,6 +41,8 @@ def sync_all_prs():
                 existing_pr.sourceBranchName = source_branch
                 existing_pr.targetBranchName = target_branch
                 existing_pr.last_modified = last_modified
+                if existing_pr.lastCommitHash != lastCommitHash:
+                    pass # To add logic
                 db.session.add(existing_pr)
             else:
                 # Process PR diff and feedback for new PRs
@@ -58,6 +61,7 @@ def sync_all_prs():
                     status=status,
                     sourceBranchName=source_branch,
                     targetBranchName=target_branch,
+                    lastCommitHash=lastCommitHash,
                     rawDiff = raw_files_diff,
                     content=processed_diff,
                     initialFeedback=feedback,
@@ -98,12 +102,15 @@ def handle_pr():
         pr_entry.title = pr_data.get('title', 'No Title')
         pr_entry.status = pr_data['state']
         pr_entry.last_modified = updated_date
+        if pr_entry.lastCommitHash != pr_data['source']['commit']['hash']:
+            pass # To add logic
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Pull request status updated successfully'}), 200
     else:
         title = pr_data.get('title', 'No Title')
         source_branch = pr_data['source']['branch']['name']
         target_branch = pr_data['destination']['branch']['name']
+        lastCommitHash = pr_data['source']['commit']['hash']
         status = pr_data['state']
 
         logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
@@ -127,6 +134,7 @@ def handle_pr():
                 status=status,  # Now fetching status from 'state' field in the main body
                 sourceBranchName=source_branch,
                 targetBranchName=target_branch,
+                lastCommitHash=lastCommitHash,
                 rawDiff = raw_files_diff,
                 content=processed_diff,
                 initialFeedback=feedback,
@@ -162,6 +170,7 @@ def summary():
                 'pr_id': entry.pr_id,
                 'sourceBranchName': entry.sourceBranchName,
                 'targetBranchName': entry.targetBranchName,
+                'lastCommitHash': entry.lastCommitHash,
                 'content': entry.content,
                 'initialFeedback': entry.initialFeedback,
                 'created_date': handle_date(entry.created_date, to_sgt=True, as_string=True),
@@ -190,6 +199,7 @@ def latest():
             'pr_id': latest_entry.pr_id,
             'sourceBranchName': latest_entry.sourceBranchName,
             'targetBranchName': latest_entry.targetBranchName,
+            'lastCommitHash': latest_entry.lastCommitHash,
             'content': latest_entry.content,
             'initialFeedback': latest_entry.initialFeedback,
             'feedback': latest_entry.feedback,
@@ -199,10 +209,6 @@ def latest():
     except Exception as e:
         logging.error(f"Error fetching summary: {e}")
         return jsonify({'error': 'Internal server error'}), 500
-
-@main.route("/api/healthchecker", methods=["GET"])
-def healthchecker():
-    return {"status": "success", "message": "Integrate Flask Framework with Next.js"}
 
 @main.route('/api/pr/<string:pr_id>', methods=['GET'])
 def pr_entry(pr_id):
@@ -226,6 +232,7 @@ def pr_entry(pr_id):
                 'status': pr_entry.status,
                 'sourceBranchName': pr_entry.sourceBranchName,
                 'targetBranchName': pr_entry.targetBranchName,
+                'lastCommitHash': pr_entry.lastCommitHash,
                 'rawDiff' : pr_entry.rawDiff,
                 'content': pr_entry.content,
                 'initialFeedback': pr_entry.initialFeedback,
@@ -310,14 +317,14 @@ def get_conversations(pr_id):
 
 @main.route('/api/pr/<string:pr_id>/content', methods=['GET'])
 def get_content(pr_id):
-        try:
-            pr_entry = PR.query.filter_by(pr_id=pr_id).first()
-            if pr_entry is None:
-                return jsonify({'error': 'PR not found'}), 404
-            return jsonify({'contents': pr_entry.content}), 200
-        except Exception as e:
-            logging.error(f"Error fetching PR contents {pr_id}: {e}")
-            return jsonify({'error': 'Internal server error'}), 500
+    try:
+        pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+        if pr_entry is None:
+            return jsonify({'error': 'PR not found'}), 404
+        return jsonify({'contents': pr_entry.content}), 200
+    except Exception as e:
+        logging.error(f"Error fetching PR contents {pr_id}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 # Groq API interaction route
 @main.route('/api/pr/<string:pr_id>/groq-response', methods=['POST'])
