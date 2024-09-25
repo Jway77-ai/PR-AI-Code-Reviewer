@@ -343,8 +343,7 @@ def process_pr(pr_id, target_branch):
         return raw_files_diff, processed_diff, feedback
     except FileNotFoundError:
         logging.error(f"Prompt file not found: {prompt_file_path}")
-        return jsonify({'error': 'Prompt file not found'}), 404
+        raise Exception(f"Error processing pull request: Prompt file not found: {prompt_file_path}")
     except Exception as e:
         logging.error(f"Error processing pull request: {e}")
-        db.session.rollback()
-        return jsonify({'error': 'Internal server error'}), 500
+        raise Exception(f"Error processing pull request: {e}")

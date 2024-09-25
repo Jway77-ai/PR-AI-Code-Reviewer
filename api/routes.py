@@ -85,7 +85,7 @@ def handle_pr():
         return jsonify({'status': 'error', 'message': 'Pull request data not found'}), 400
 
     pr_data = data.get('pullrequest')
-    pr_id = str(pr_data.get('id'))   
+    pr_id = str(pr_data.get('id'))
     created_date = handle_date(pr_data.get('created_on'), to_sgt=True)
     updated_date = handle_date(pr_data.get('updated_on'), to_sgt=True)
 

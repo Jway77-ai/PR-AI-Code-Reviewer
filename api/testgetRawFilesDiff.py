@@ -14,7 +14,6 @@ def get_pr_from_repo(pr_id):
     try:
         BITBUCKET_KEY = os.getenv("BITBUCKET_KEY")
         BITBUCKET_SECRET = os.getenv("BITBUCKET_SECRET")
-
         token_url = "https://bitbucket.org/site/oauth2/access_token"
         response = requests.post(
             token_url,
@@ -49,5 +48,5 @@ def get_raw_files_diff(pr_id):
     else:
         return response.text
 
-print(get_raw_files_diff(39))
+print(get_raw_files_diff(41))
 
