@@ -42,7 +42,7 @@ const FilesChanged: React.FC<FileChangeProps> = ({ content }) => {
   };
 
   const fileChanges = parseContent(content);
-  const [openStates, setOpenStates] = useState<boolean[]>(Array(fileChanges.length).fill(true)); // Track open states
+  const [openStates, setOpenStates] = useState<boolean[]>(Array(fileChanges.length).fill(false)); // Track open states
 
   const toggleVisibility = (index: number) => {
     setOpenStates(prev => {
