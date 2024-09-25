@@ -185,31 +185,6 @@ def summary():
         logging.error(f"Error type: {type(e).__name__}")
         return jsonify({'error': 'Internal server error'}), 500
 
-# Latest reviewed PR - might not be needed anymore
-@main.route('/api/latest', methods=['GET'])
-def latest():
-    try:
-        latest_entry = PR.query.order_by(PR.date_created.desc()).first()
-        logging.error(latest_entry)
-        if not latest_entry:
-            return jsonify({'message': 'No entries found in the database.'}), 200
-        return jsonify({'entry': {
-            'title': latest_entry.title,
-            'status':latest_entry.status,
-            'pr_id': latest_entry.pr_id,
-            'sourceBranchName': latest_entry.sourceBranchName,
-            'targetBranchName': latest_entry.targetBranchName,
-            'lastCommitHash': latest_entry.lastCommitHash,
-            'content': latest_entry.content,
-            'initialFeedback': latest_entry.initialFeedback,
-            'feedback': latest_entry.feedback,
-            'created_date': handle_date(latest_entry.created_date, to_sgt=True, as_string=True),
-            'last_modified': handle_date(latest_entry.last_modified, to_sgt=True, as_string=True)
-        }}), 200
-    except Exception as e:
-        logging.error(f"Error fetching summary: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
 @main.route('/api/pr/<string:pr_id>', methods=['GET'])
 def pr_entry(pr_id):
     if request.method == 'GET':
@@ -246,31 +221,7 @@ def pr_entry(pr_id):
             logging.error(f"Error fetching PR {pr_id}: {e}")
             return jsonify({'error': 'Internal server error'}), 500
         
-# Capture latest feedback
-@main.route('/api/pr/<string:pr_id>/feedback', methods=['POST'])
-def update_feedback(pr_id):
-    data = request.json
-    new_feedback = data.get('feedback')
-
-    if not new_feedback:
-        return jsonify({'status': 'error', 'message': 'No feedback provided'}), 400
-
-    try:
-        pr_entry = PR.query.filter_by(pr_id=pr_id).first()
-        if not pr_entry:
-            return jsonify({'status': 'error', 'message': 'PR not found'}), 404
-
-        # Update the latest feedback in the PR table
-        pr_entry.feedback = new_feedback
-        db.session.commit()
-
-        return jsonify({'status': 'success', 'message': 'Feedback updated successfully'}), 200
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error updating feedback: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-    
-#maintain convo history
+# Maintain convo history
 @main.route('/api/pr/<string:pr_id>/conversation', methods=['POST'])
 def add_conversation(pr_id):
     data = request.json
