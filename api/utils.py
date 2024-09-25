@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import requests
 from requests.auth import HTTPBasicAuth
 from pytz import timezone, utc
+from flask import jsonify
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -326,3 +327,24 @@ def handle_date(date_input, to_sgt=False, as_string=False):
     if as_string:
         return dt.strftime('%Y-%m-%d %H:%M:%S')
     return dt
+
+def process_pr(pr_id, target_branch):
+    try:
+        # Fetch the PR diff from Bitbucket
+        raw_files_diff = get_raw_files_diff(pr_id)
+        files_diff = get_files_diff(pr_id, target_branch)
+        processed_diff = process_files_diff(files_diff)
+
+        # Example LLM analysis (optional)
+        prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
+        with open(prompt_file_path, 'r') as file:
+            prompt_text = file.read().strip()
+        feedback = analyze_code_with_llm(prompt_text, processed_diff)
+        return raw_files_diff, processed_diff, feedback
+    except FileNotFoundError:
+        logging.error(f"Prompt file not found: {prompt_file_path}")
+        return jsonify({'error': 'Prompt file not found'}), 404
+    except Exception as e:
+        logging.error(f"Error processing pull request: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500

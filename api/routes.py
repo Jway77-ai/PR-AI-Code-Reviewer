@@ -2,8 +2,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from groq import Groq
 from .models import PR, Conversation
-from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM, handle_date, get_raw_files_diff
-#from .extensions import db
+from .utils import get_all_prs_from_repo, get_files_diff, process_files_diff, analyze_code_with_llm, queryLLM, handle_date, get_raw_files_diff, process_pr
 from .index import db
 import os
 import requests
@@ -79,62 +78,42 @@ def sync_all_prs():
         db.session.rollback()
         return jsonify({'error': 'Internal server error'}), 500
 
+# Api to receive payload from Bitbucket webhook for new PRs or updates to the PR
 @main.route('/api/pr', methods=['POST'])
 def handle_pr():
     data = request.json
-
     if 'pullrequest' not in data:
         return jsonify({'status': 'error', 'message': 'Pull request data not found'}), 400
 
-    # Access the pullrequest object and state
     pr_data = data.get('pullrequest')
-    pr_id = str(pr_data.get('id'))
-
-    if pr_id is None:
-        return jsonify({'status': 'error', 'message': 'PR ID not found'}), 400
-    
+    pr_id = str(pr_data.get('id'))   
     created_date = handle_date(pr_data.get('created_on'), to_sgt=True)
     updated_date = handle_date(pr_data.get('updated_on'), to_sgt=True)
 
-    # If this pr_id already exists, update it instead
+    # Update the PR entry if this pr_id already exists
     pr_entry = PR.query.filter_by(pr_id=pr_id).first()
     if pr_entry:
         pr_entry.title = pr_data.get('title', 'No Title')
         pr_entry.status = pr_data['state']
         pr_entry.last_modified = updated_date
         if pr_entry.lastCommitHash != pr_data['source']['commit']['hash']:
-            pass # To add logic
+            pr_entry.rawDiff, pr_entry.content, pr_entry.feedback = process_pr(pr_id, target_branch)
+            pr_entry.lastCommitHash = pr_data['source']['commit']['hash']
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Pull request status updated successfully'}), 200
     else:
-        title = pr_data.get('title', 'No Title')
-        source_branch = pr_data['source']['branch']['name']
         target_branch = pr_data['destination']['branch']['name']
-        lastCommitHash = pr_data['source']['commit']['hash']
-        status = pr_data['state']
-
-        logging.info(f"Processing PR: {pr_id}, Title: {title}, Status: {status}")
-
+        logging.info(f"Processing PR: {pr_id}, Title: {pr_data.get('title', 'No Title')}, Status: {pr_data['state']}")
         try:
-            # Fetch the PR diff from Bitbucket
-            raw_files_diff = get_raw_files_diff(pr_id)
-            files_diff = get_files_diff(pr_id, target_branch)
-            processed_diff = process_files_diff(files_diff)
-
-            # Example LLM analysis (optional)
-            prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompttext')
-            with open(prompt_file_path, 'r') as file:
-                prompt_text = file.read().strip()
-            feedback = analyze_code_with_llm(prompt_text, processed_diff)
-
+            raw_files_diff, processed_diff, feedback = process_pr(pr_id, target_branch)
             # Insert the fetched PR data into the PostgreSQL database
             new_pr_diff = PR(
                 pr_id=pr_id,
-                title=title,
-                status=status,  # Now fetching status from 'state' field in the main body
-                sourceBranchName=source_branch,
-                targetBranchName=target_branch,
-                lastCommitHash=lastCommitHash,
+                title=pr_data.get('title', 'No Title'),
+                status=pr_data['state'], 
+                sourceBranchName=pr_data['source']['branch']['name'],
+                targetBranchName=pr_data['destination']['branch']['name'],
+                lastCommitHash=pr_data['source']['commit']['hash'],
                 rawDiff = raw_files_diff,
                 content=processed_diff,
                 initialFeedback=feedback,
@@ -145,9 +124,6 @@ def handle_pr():
             db.session.add(new_pr_diff)
             db.session.commit()
             return jsonify({'status': 'success', 'message': 'Pull request processed and saved successfully'}), 200
-        except FileNotFoundError:
-            logging.error(f"Prompt file not found: {prompt_file_path}")
-            return jsonify({'error': 'Prompt file not found'}), 404
         except Exception as e:
             logging.error(f"Error processing pull request: {e}")
             db.session.rollback()
