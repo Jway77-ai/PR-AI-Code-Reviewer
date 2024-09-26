@@ -165,7 +165,7 @@ const Dashboard: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(pr.last_modified)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <Link href={`/pull-requests/${pr.pr_id}`} className="text-blue-600 hover:text-blue-900">
                             <FaExternalLinkAlt className="inline mr-1" />
                             View
