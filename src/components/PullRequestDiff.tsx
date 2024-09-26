@@ -22,8 +22,7 @@ const PullRequestDiff: React.FC<PullRequestDiffProps> = ({ pullRequestDiff }) =>
   }, [pullRequestDiff]);
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold mb-4">Pull Request Diff</h2>
+    <div className="relative overflow-auto max-h-[500px]"> {/* Control overflow and max height */}
       <div id="diffContainer" className="bg-white shadow-lg rounded-lg p-4"></div>
     </div>
   );
