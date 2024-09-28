@@ -19,7 +19,7 @@ code {
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 204 100% 34%;
+    --foreground: 206 100% 36%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
