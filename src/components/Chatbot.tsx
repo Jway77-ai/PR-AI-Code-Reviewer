@@ -57,6 +57,43 @@ const apiCall = async <T extends ApiResponse>(
   return response.json() as Promise<T>;
 };
 
+
+// Function to escape HTML in code blocks
+const escapeHtml = (str: string) => {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+// Extended markdown parser to handle code blocks with styling
+const parseMarkdown = (text: string) => {
+  // Replace code blocks ```code``` with styled <pre><code> block
+  text = text.replace(
+    /```([\s\S]*?)```/g,
+    (match, p1) =>
+      `<pre class="bg-gray-100 p-4 rounded-lg overflow-x-auto"><code>${escapeHtml(
+        p1
+      )}</code></pre>`
+  );
+
+  // Replace inline code `code` with <code> and escape HTML
+  text = text.replace(/`([^`]+)`/g, (match, p1) => `<code>${escapeHtml(p1)}</code>`);
+
+  // Replace bold syntax **bold** with <strong>bold</strong>
+  text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+  // Replace italics syntax *italic* with <em>italic</em>
+  text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+  // Replace line breaks with <br />
+  text = text.replace(/\n/g, "<br />");
+
+  return text;
+};
+
 const Chatbot: React.FC<Props> = ({ prId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>("");
@@ -172,7 +209,9 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
             <p className="font-semibold">
               {msg.role === "user" ? "You:" : "UOB Code Reviewer:"}
             </p>
-            <p>{msg.content}</p>
+            <p
+              dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }}
+            ></p>
           </div>
         ))}
         <div ref={messageEndRef} /> {/* Ref to scroll to the bottom */}

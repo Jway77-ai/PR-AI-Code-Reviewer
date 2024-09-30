@@ -10,6 +10,42 @@ interface Props {
   prId: string;
 }
 
+// Function to escape HTML in code blocks
+const escapeHtml = (str: string) => {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+// Extended markdown parser to handle code blocks with styling
+const parseMarkdown = (text: string) => {
+  // Replace code blocks ```code``` with styled <pre><code> block
+  text = text.replace(
+    /```([\s\S]*?)```/g,
+    (match, p1) =>
+      `<pre class="bg-gray-100 p-4 rounded-lg overflow-x-auto"><code>${escapeHtml(
+        p1
+      )}</code></pre>`
+  );
+
+  // Replace inline code `code` with <code> and escape HTML
+  text = text.replace(/`([^`]+)`/g, (match, p1) => `<code>${escapeHtml(p1)}</code>`);
+
+  // Replace bold syntax **bold** with <strong>bold</strong>
+  text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+  // Replace italics syntax *italic* with <em>italic</em>
+  text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+
+  // Replace line breaks with <br />
+  text = text.replace(/\n/g, "<br />");
+
+  return text;
+};
+
 const PullRequestDetails: React.FC<Props> = ({ prId }) => {
   const [prDetails, setPrDetails] = useState<PullRequest | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -117,21 +153,10 @@ const PullRequestDetails: React.FC<Props> = ({ prId }) => {
               Feedback
             </h3>
             <div className="mt-2 text-gray-600 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <div>
-                <h4 className="font-semibold">Description</h4>
-                <p>{prDetails.feedback.split("***")[2]}</p>
-              </div>
               <div className="mt-4">
-                <h4 className="font-semibold">Suggestions</h4>
-                <div>
-                  {prDetails.feedback
-                    .split("***")[4]
-                    .split(/(?=\d+\.\s)/)
-                    .map((solution, index) => (
-                      <p key={index} className="mb-2">
-                        {solution}
-                      </p>
-                    ))}
+                <div
+                  dangerouslySetInnerHTML={{ __html: parseMarkdown(prDetails.feedback) }}
+                >
                 </div>
               </div>
             </div>
