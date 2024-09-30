@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Props {
   prId: string;
@@ -62,6 +62,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const messageEndRef = useRef<HTMLDivElement | null>(null); // Ref for scrolling
 
   const fetchConversationHistory = useCallback(async () => {
     if (!prId) {
@@ -90,6 +91,13 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
   useEffect(() => {
     fetchConversationHistory();
   }, [fetchConversationHistory, prId]);
+
+  useEffect(() => {
+    // Scroll to bottom whenever messages change
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -167,6 +175,7 @@ const Chatbot: React.FC<Props> = ({ prId }) => {
             <p>{msg.content}</p>
           </div>
         ))}
+        <div ref={messageEndRef} /> {/* Ref to scroll to the bottom */}
       </div>
       <div className="flex mt-2">
         <input
