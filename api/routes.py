@@ -252,6 +252,17 @@ def get_content(pr_id):
         logging.error(f"Error fetching PR contents {pr_id}: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@main.route('/api/pr/<string:pr_id>/feedback', methods=['GET'])
+def get_feedback(pr_id):
+    try:
+        pr_entry = PR.query.filter_by(pr_id=pr_id).first()
+        if pr_entry is None:
+            return jsonify({'error': 'PR not found'}), 404
+        return jsonify({'contents': pr_entry.feedback}), 200
+    except Exception as e:
+        logging.error(f"Error fetching PR contents {pr_id}: {e}")
+        return jsonify({'error': 'Internal server error'}), 
+
 # Groq API interaction route
 @main.route('/api/pr/<string:pr_id>/groq-response', methods=['POST'])
 def groq_response(pr_id):
