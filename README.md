@@ -3,7 +3,7 @@
 In your terminal, navigate to the desired project directory, and run:
 1. ```git clone https://github.com/Jway77-ai/uob-hackathon-dragons.git```
 2. ```cd uob-hackathon-dragons```
-* Note: Other than the setup below, you may have to install any other software you may be missing like Python, NextJS, Javascript etc.
+* Note: Other than the setup below, you may have to install any other software you may be missing like Python, NodeJS, pip, npm etc.
 
 ## Backend Prerequisites
 **Create a virtual environment for the project:**
