@@ -1,51 +1,35 @@
 # Setup for Next.Js + Flask
 
-## Prerequisites
+## Backend Prerequisites
+**Create a virtual environment:**
+### On Windows
+1. ```python -m venv venv```
+2. ```.\venv\Scripts\activate```
+### On macOS/Linux
+1. ```python3 -m venv venv```
+2. ```source venv/bin/activate```
 
-1. **Create a virtual environment**:
+**Install the requirements:**
+Install python dependencies ```pip install -r requirements.txt```
 
-## On Windows
+## Frontend Prerequisites
 
-python -m venv venv
+**Install pnpm:**
+```npm i -g pnpm```
 
-## On macOS/Linux
+## Setup Instructions
 
-python3 -m venv venv
+### Clone the Repository: Open your terminal, navigate to the desired project directory, and run:
 
-2. **Type in the terminal**
+1. ```git clone https://github.com/Jway77-ai/uob-hackathon-dragons.git```
+2. ```cd debugging-dragons-hackathon```
 
-## On Windows
+### Install Dependencies: Install all necessary dependencies by running:
 
-.\venv\Scripts\activate
+1. ```pnpm install```
 
-## On macOS/Linux
+### Run the Development Server: Start the NextJs development server with:
 
-source venv/bin/activate
-
-3. install python dependecies `pip install -r requirements.txt`
-
-## Start Flask Server
-
-python index.py
-
-# Frontend
-
-4. **pnpM**: To install:
-5. npm i -g pnpm
-
-# Setup Instructions
-
-## Clone the Repository: Open your terminal, navigate to the desired project directory, and run:
-
-1. git clone <your-repo-url>
-2. cd debugging-dragons-hackathon
-
-## Install Dependencies: Install all necessary dependencies by running:
-
-1. pnpm install
-
-## Run the Development Server: Start the NextJs development server with:
-
-1. pnpm dev
+1. ```pnpm dev```
 
 This command will start the NextJs with Flask app in development mode. Open http://localhost:3000 in your browser to view it.
