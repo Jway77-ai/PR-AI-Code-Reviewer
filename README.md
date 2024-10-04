@@ -1,3 +1,6 @@
+![image](https://github.com/user-attachments/assets/cc71e0e2-308e-486d-b9dd-de788521e64c)
+
+
 # Table of contents
 1. [Features](#features)
 2. [Architecture and workflow](#workflow)
