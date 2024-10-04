@@ -3,7 +3,9 @@
 2. [Architecture and workflow](#workflow)
 3. [Setting up the project](#setup)
 4. [How to use the web app](#testing)
-5. [Links](#links)
+5. [Tech Stack](#stack)
+6. [Further Improvements](#improvements)
+7. [Links](#links)
 
 ## Features <a name="features"></a>
 ![image](https://github.com/user-attachments/assets/8c66a425-b957-4908-8978-9f53469d490d)
@@ -27,7 +29,7 @@ The workflow is designed to enhance code quality and streamline the review proce
 6. **Web app dashboard page**: When the user access the dash board on the web app, a number of past reviewed PRs will be fetched from the database to be displayed. The user can click on any of them to view the feedback provided by the AI as well as other PR details like the files changed.
 7. **Web app PR details page/chatbot**: When the user clicks on any of the PRs in step 6, they can view all PR related details. They can also chat with the chatbot, and ask it questions regarding the feedback provided. The conversation for each PR is saved in the database, and will always maintain context of previous queries regarding that PR.
 
-## Setup for Next.Js + Flask <a name="setup"></a>
+## Setup for Next.js + Flask <a name="setup"></a>
 ### Clone the Repository
 In your terminal, navigate to the desired project directory, and run:
 1. ```git clone https://github.com/Jway77-ai/uob-hackathon-dragons.git```
@@ -71,6 +73,20 @@ This command will start the NextJs with Flask app in development mode. Open http
 4. Navigate to the web app deployed on Vercel: https://uob-hackathon-dragons.vercel.app/
 5. You should see your pull request on the dashboard. You may click "View" to see the provided feedback by the AI, and ask it any questions you may have.
 6. Update your branch on Bitbucket based on the feedback. The PR feedback and status should be updated based on your changes.
+
+## Tech Stack <a name="stack"></a>
+- Backend: Python Flask, PostgresSQL db
+- Frontend: Next.js, React, Tailwind CSS
+- LLM API: Groq
+- Version Control Software: Github (source code), Bitbucket (sample repo with pull requests for our app to perform code reviews on)
+- Deployment: Vercel
+
+## Further Improvements <a name="improvements"></a>
+If we do continue development on the app in the future, the following features are some possible improvements to be added.
+- Update the app to work with other repos like Github and Bitbucket Server. Currently it is tailored for Bitbucket Cloud.
+- Allow the user to authenticate and log in with their Bitbucket accounts to grant the app permission to access their repo data. This allows us to access their pull requests without a webhook, and associate each pull request with a user so that they can only view the feedback for their pull requests and not other users'.
+- Improve the UI, and add the ability to view more than 15 PRs on the dashboard at once, as well as search by PR id. Also improve on the layout of the PR feedback page.
+- Improve the capability of the chatbot to perhaps also review the pull request not just based on the individual edited files but also based on the context of the other possibly related files in the repo too.
 
 ## Links <a name="links"></a>
 - UOB Code Reviewer web app: https://uob-hackathon-dragons.vercel.app/
