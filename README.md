@@ -2,7 +2,7 @@
 1. [Features](#features)
 2. [Architecture and workflow](#workflow)
 3. [Setting up the project](#setup)
-4. [How to use the web app](#testing)
+4. [How to use UOB Code Reviewer](#testing)
 5. [Tech Stack](#stack)
 6. [Further Improvements](#improvements)
 7. [Links](#links)
@@ -63,7 +63,7 @@ In your terminal, navigate to the desired project directory, and run:
 
 This command will start the NextJs with Flask app in development mode. Open http://localhost:3000 in your browser to view it.
 
-## How to use the web app <a name="testing"></a>
+## How to use UOB Code Reviewer <a name="testing"></a>
 1. Navigate to the Bitbucket repo. [Sample repo for testing](https://bitbucket.org/debugging-dragons/webhook-codedoc/src/main/).
     - If you want to use your own Bitbucket repo, create a webhook and link it to this endpoint: https://uob-hackathon-dragons.vercel.app/api/pr
 
