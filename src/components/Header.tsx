@@ -18,7 +18,7 @@ const Header: React.FC = () => {
             <p className="text-gray-300 hover:text-white">Dashboard</p>
           </Link>
           <Link
-            href="https://github.com/Jway77-ai/uob-hackathon-dragons"
+            href="https://github.com/Jway77-ai/PR-AI-Code-Reviewer"
             target="_blank"
             rel="noopener noreferrer"
           >

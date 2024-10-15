@@ -27,7 +27,7 @@ const getBaseUrl = (): string => {
   }
   return (
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://uob-hackathon-dragons.vercel.app/api"
+    "https://pr-ai-code-reviewer.vercel.app/api"
   );
 };
 
@@ -57,7 +57,6 @@ const apiCall = async <T extends ApiResponse>(
   return response.json() as Promise<T>;
 };
 
-
 // Function to escape HTML in code blocks
 const escapeHtml = (str: string) => {
   return str
@@ -80,7 +79,10 @@ const parseMarkdown = (text: string) => {
   );
 
   // Replace inline code `code` with <code> and escape HTML
-  text = text.replace(/`([^`]+)`/g, (match, p1) => `<code>${escapeHtml(p1)}</code>`);
+  text = text.replace(
+    /`([^`]+)`/g,
+    (match, p1) => `<code>${escapeHtml(p1)}</code>`
+  );
 
   // Replace bold syntax **bold** with <strong>bold</strong>
   text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
