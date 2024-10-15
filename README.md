@@ -8,13 +8,13 @@
 7. [Links](#links)
 
 ## Features <a name="features"></a>
-![image](https://github.com/user-attachments/assets/8c66a425-b957-4908-8978-9f53469d490d)
+![image](![image](https://github.com/user-attachments/assets/43dca0f9-717a-4d52-b261-ab0cdc68069d)
 
 1. Pull Request AI Code Reviewer is a web application that streamlines the pull request review process with the assistance of AI feedback.
 2. The dashboard displays recently created pull requests. The user is able to see all relevant information regarding the pull request, like its status and the file differences when they click on it.
 3. Each pull request is thoroughly reviewed by AI, with suggestions for improvements. The AI will provide feedback on syntax errors, logical errors, code quality/organization, error handling etc.
 4. The user will be able to chat with the AI to ask further questions on the given feedback, clear any doubts they may have, or ask for more advice.
-![image](https://github.com/user-attachments/assets/62260fa5-b572-45bc-822f-f22a105d343b)
+![image](![prStuff](https://github.com/user-attachments/assets/1846b105-38bd-4713-9539-c4f789684610)
 
 ## Architecture and workflow <a name="workflow"></a>
 The workflow is designed to enhance code quality and streamline the review process through the following steps: 
