@@ -15,7 +15,9 @@ const Header: React.FC = () => {
         </div>
         <nav className="space-x-4 flex flex-row">
           <Link href="/">
-            <p className="text-gray-300 hover:text-white">Dashboard</p>
+            <p className="text-gray-300 hover:text-white">
+              Code Review Dashboard
+            </p>
           </Link>
           <Link
             href="https://github.com/Jway77-ai/PR-AI-Code-Reviewer"
