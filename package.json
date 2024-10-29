@@ -22,8 +22,8 @@
   },
   "devDependencies": {
     "@radix-ui/react-tabs": "^1.1.1",
-    "@types/node": "^20.16.11",
-    "@types/react": "^18.3.11",
+    "@types/node": "^20.17.2",
+    "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "concurrently": "^9.0.1",
     "eslint": "^8.57.1",
